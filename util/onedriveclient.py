@@ -6,6 +6,9 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import os
+import re
+import requests
 import sys
 import time
 
@@ -13,7 +16,6 @@ import json
 
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
-from requests.exceptions import (ConnectionError, HTTPError)
 
 class OneDriveClient(object):
     def __init__(self, config):
@@ -35,7 +37,11 @@ class OneDriveClient(object):
         if self.token['expires_at'] > time.time():
             self._get_token()
 
-        return self.msgraph.get('{0}{1}'.format(self.baseurl, path), timeout=self.config.get('timeout', 5))
+        return self.msgraph.get(
+            '{0}{1}'.format(self.baseurl, path),
+            timeout = self.config.get('timeout', 5),
+            allow_redirects = False,
+        )
 
     def get(self, path):
         result = None
@@ -49,7 +55,10 @@ class OneDriveClient(object):
             else:
                 result.raise_for_status()
 
-        return json.loads(result.content)
+        if result.status_code == 302:
+            return { 'location': result.headers['location'] }
+        else:
+            return json.loads(result.content)
 
     def list_drives(self, user):
         drives = self.get('users/{0}@{1}/drives'.format(user, self.config['domain']))['value']
@@ -59,3 +68,37 @@ class OneDriveClient(object):
 
     def list_folder(self, folder):
         return self.get('drives/{0}/items/{1}/children'.format(folder['parentReference']['driveId'], folder['id']))['value']
+
+    def expand_items(self, items):
+        expanded = True
+        while expanded:
+            expanded = False
+            for item in items:
+                if 'folder' in item and 'expanded' not in item:
+                    items.extend(self.list_folder(item))
+                    item['expanded'] = True
+                    expanded = True
+                if 'fullpath' not in item:
+                    if 'path' in item['parentReference']:
+                        item['fullpath'] = '/'.join((
+                            re.sub(
+                                '/drives/[^/]+/root:',
+                                '',
+                                item['parentReference']['path'],
+                            ),
+                            item['name']
+                        ))
+                    else:
+                        item['fullpath'] = '/'
+
+        return items
+
+    def download_file(self, drive_id, file_id, dest):
+        url = self.get('drives/{0}/items/{1}/content'.format(drive_id, file_id))
+        destdir = os.path.dirname(dest)
+        if not os.path.exists(destdir):
+            os.makedirs(destdir, 0755)
+        with requests.get(url['location'], stream = True) as r:
+            with open(dest, 'wb') as f:
+                for chunk in r.iter_content(chunk_size = None):
+                    f.write(chunk)

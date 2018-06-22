@@ -6,9 +6,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import argparse
 import json
-import re
 import sys
 
 import yaml
@@ -29,26 +27,20 @@ if cli.args.action == 'list-drives':
             print(d['id'])
 
 elif cli.args.action == 'list-items':
-    items = []
-    for drive in drives:
-        items.append(drive['root'])
-
-    expanded = True
-    while expanded:
-        expanded = False
-        for item in items:
-            if 'folder' in item and 'expanded' not in item:
-                items.extend(client.list_folder(item))
-                item['expanded'] = True
-                expanded = True
+    items = client.expand_items([drive['root'] for drive in drives])
 
     if args.verbose:
         json.dump(items, sys.stdout, indent = 2)
     else:
         for item in items:
-            if 'path' in item['parentReference']:
-                path = item['parentReference']['path']
-                path = re.sub('/drives/[^/]+/root:', '', path)
-                print('/'.join((path, item['name'])))
-            else:
-                print('/')
+            print(item['fullpath'])
+
+elif cli.args.action == 'download-items':
+    items = client.expand_items([drive['root'] for drive in drives])
+    for item in items:
+        if 'file' in item:
+            print('Downloading {0}...'.format(item['fullpath']))
+            client.download_file(item['parentReference']['driveId'], item['id'], '/var/tmp/' + args.user + '/' + item['fullpath'])
+
+else:
+    print('Unsupported action {0}'.format(cli.args.action))
