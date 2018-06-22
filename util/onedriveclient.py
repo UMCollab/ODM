@@ -7,11 +7,13 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import sys
+import time
 
 import json
 
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
+from requests.exceptions import (ConnectionError, HTTPError)
 
 class OneDriveClient(object):
     def __init__(self, config):
@@ -19,9 +21,9 @@ class OneDriveClient(object):
         self.config = config
         client = BackendApplicationClient(client_id = config.get('client_id'))
         self.msgraph = OAuth2Session(client = client)
-        self.get_token()
+        self._get_token()
 
-    def get_token(self):
+    def _get_token(self):
         self.token = self.msgraph.fetch_token(
             token_url = 'https://login.microsoftonline.com/{0}/oauth2/v2.0/token'.format(self.config.get('domain')),
             client_id = self.config.get('client_id'),
@@ -29,8 +31,22 @@ class OneDriveClient(object):
             scope = [ 'https://graph.microsoft.com/.default' ],
         )
 
+    def _get(self, path):
+        if self.token['expires_at'] > time.time():
+            self._get_token()
+
+        return self.msgraph.get('{0}{1}'.format(self.baseurl, path), timeout=self.config.get('timeout', 5))
+
     def get(self, path):
-        result = self.msgraph.get('{0}{1}'.format(self.baseurl, path))
+        result = None
+        while not result:
+            result = self._get(path)
+            if result.status_code == 429:
+                delay = result.headers['retry-after']
+                result = None
+                print('Throttled, sleeping for {0} seconds'.format(delay))
+                time.sleep(delay)
+
         return json.loads(result.content)
 
     def list_drives(self, user):

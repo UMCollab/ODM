@@ -27,6 +27,9 @@ client = onedriveclient.OneDriveClient(config)
 
 drives = client.list_drives(args.user)
 
+if args.verbose:
+    yaml.safe_dump(drives, sys.stdout)
+
 items = []
 for drive in drives:
     items.append(drive['root'])
@@ -41,6 +44,7 @@ while expanded:
             expanded = True
 
 if args.verbose:
+    print("\n-------------------------\n")
     yaml.safe_dump(items, sys.stdout)
 else:
     for item in items:
