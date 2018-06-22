@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+# This file is part of onedrive-magic and distributed under the terms of the
+# MIT license. See COPYING.
+
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
+import argparse
+import json
+import re
+import sys
+
+import yaml
+
+from util import cli
+
+cli = cli.CLI(['user', 'action'])
+client = cli.client
+args = cli.args
+
+drives = client.list_drives(args.user)
+
+if cli.args.action == 'list-drives':
+    if args.verbose:
+        json.dump(drives, sys.stdout, indent = 2)
+    else:
+        for d in drives:
+            print(d['id'])
+
+elif cli.args.action == 'list-items':
+    items = []
+    for drive in drives:
+        items.append(drive['root'])
+
+    expanded = True
+    while expanded:
+        expanded = False
+        for item in items:
+            if 'folder' in item and 'expanded' not in item:
+                items.extend(client.list_folder(item))
+                item['expanded'] = True
+                expanded = True
+
+    if args.verbose:
+        json.dump(items, sys.stdout, indent = 2)
+    else:
+        for item in items:
+            if 'path' in item['parentReference']:
+                path = item['parentReference']['path']
+                path = re.sub('/drives/[^/]+/root:', '', path)
+                print('/'.join((path, item['name'])))
+            else:
+                print('/')
