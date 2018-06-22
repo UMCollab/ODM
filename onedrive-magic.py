@@ -15,6 +15,7 @@ from util import onedriveclient
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', help = 'Config file location', default = 'config.yaml')
+parser.add_argument('-v', '--verbose', help = 'Enable verbose output', action='store_true')
 parser.add_argument('user')
 
 args = parser.parse_args()
@@ -22,12 +23,25 @@ args = parser.parse_args()
 with open(args.config, 'r') as configfile:
     config = yaml.safe_load(configfile)
 
-yaml.dump(config, sys.stdout)
-
 client = onedriveclient.OneDriveClient(config)
 
-print(client.token)
+drives = client.list_drives(args.user)
 
-for drive in client.get('users/{0}@{1}/drives'.format(args.user, config['domain']))['value']:
-    #drives/{0}/root?expand=children(select=id,name)
-    yaml.safe_dump(client.get('drives/{0}/root?expand=children'.format(drive['id'])), sys.stdout)
+items = []
+for drive in drives:
+    items.append(drive['root'])
+
+expanded = True
+while expanded:
+    expanded = False
+    for item in items:
+        if 'folder' in item and 'expanded' not in item:
+            items.extend(client.list_folder(item))
+            item['expanded'] = True
+            expanded = True
+
+if args.verbose:
+    yaml.safe_dump(items, sys.stdout)
+else:
+    for item in items:
+        print(item['name'])
