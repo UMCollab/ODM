@@ -46,6 +46,8 @@ class OneDriveClient(object):
                 result = None
                 print('Throttled, sleeping for {0} seconds'.format(delay))
                 time.sleep(delay)
+            else:
+                result.raise_for_status()
 
         return json.loads(result.content)
 
