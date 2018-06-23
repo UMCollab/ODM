@@ -13,7 +13,7 @@ import yaml
 
 from util import onedriveclient
 
-class CLI(object):
+class CLI:
     def __init__(self, positional_args):
         parser = argparse.ArgumentParser()
         parser.add_argument('-c', '--config', help = 'Config file location', default = 'config.yaml')

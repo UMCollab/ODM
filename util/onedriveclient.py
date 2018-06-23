@@ -17,7 +17,7 @@ import json
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
-class OneDriveClient(object):
+class OneDriveClient:
     def __init__(self, config):
         self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.config = config
