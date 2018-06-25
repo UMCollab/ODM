@@ -20,54 +20,49 @@ class QuickXORHash:
         self.length = 0
         self.data = [0] * (int((self.width - 1) / 64) + 1)
 
-    def update(self, newdata):
-        shifted = self.shifted
+    def update(self, data):
+        cur_pos = int(self.shifted / 64)
+        cur_bitpos = int(self.shifted % 64)
 
-        cur_pos = int(shifted / 64)
-        cur_bitpos = int(shifted % 64)
-
-        iterations = min(self.width, len(newdata))
-
-        for i in range(0, iterations):
+        for i in xrange(0, min(self.width, len(data))):
             is_last = cur_pos == len(self.data) - 1
-            bitsincell = 32 if is_last else 64
+            cell_bits = 32 if is_last else 64
 
-            newbyte = 0
-            for j in range(i, len(newdata), self.width):
-                newbyte ^= newdata[j]
+            new_byte = 0
+            for j in xrange(i, len(data), self.width):
+                new_byte ^= data[j]
 
             # Python doesn't have fixed-width data types, so we need to
             # explicitly throw away extra bits.
-            self.data[cur_pos] ^= newbyte << cur_bitpos & 0xffffffffffffffff
+            self.data[cur_pos] ^= new_byte << cur_bitpos & 0xffffffffffffffff
 
-            if cur_bitpos > bitsincell - 8:
-                self.data[0 if is_last else cur_pos + 1] ^= newbyte >> bitsincell - cur_bitpos
+            if cur_bitpos > cell_bits - 8:
+                self.data[0 if is_last else cur_pos + 1] ^= new_byte >> cell_bits - cur_bitpos
 
             cur_bitpos += self.shift
-            while cur_bitpos >= bitsincell:
+            while cur_bitpos >= cell_bits:
                 cur_pos = 0 if is_last else cur_pos + 1
-                cur_bitpos -= bitsincell
+                cur_bitpos -= cell_bits
 
-        self.shifted += self.shift * (len(newdata) % self.width)
+        self.shifted += self.shift * (len(data) % self.width)
         self.shifted %= self.width
-        self.length += len(newdata)
+        self.length += len(data)
 
-    def final(self):
+    def finalize(self):
         # Convert cells to byte array
-        bytedata = bytearray()
-        for i in range(0, len(self.data)):
+        b_data = bytearray()
+        for i in xrange(0, len(self.data)):
             chunk = struct.unpack('8B', struct.pack('Q', self.data[i]))
             if (i + 1) * 64 <= self.width:
-                bytedata.extend(chunk)
+                b_data.extend(chunk)
             else:
-                bytedata.extend(chunk[0:(int(self.width / 8 % 8))])
+                b_data.extend(chunk[0:(int(self.width / 8 % 8))])
 
         # Convert length to byte array
-        bytelen = struct.unpack('8B', struct.pack('Q', self.length))
+        b_length = struct.unpack('8B', struct.pack('Q', self.length))
 
         # XOR the length with the least significant bits
-        for i in range(0, len(bytelen)):
-            bytedata[int(i + (self.width / 8) - len(bytelen))] ^= bytelen[i]
+        for i in xrange(0, len(b_length)):
+            b_data[int(i + (self.width / 8) - len(b_length))] ^= b_length[i]
 
-        #return ''.join('{:02x}'.format(b) for b in bytedata)
-        return base64.b64encode(bytedata)
+        return base64.b64encode(b_data)
