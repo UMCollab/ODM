@@ -32,18 +32,16 @@ class QuickXORHash:
             is_last = cur_pos == len(self.data) - 1
             bitsincell = 32 if is_last else 64
 
-            if cur_bitpos <= bitsincell - 8:
-                for j in range(i, len(newdata), self.width):
-                    # Python doesn't have fixed-width data types, so we need to
-                    # explicitly throw away bits after a left shift
-                    self.data[cur_pos] ^= newdata[j] << cur_bitpos & 0xffffffffffffffff
-            else:
-                low = bitsincell - cur_bitpos
-                newbyte = 0
-                for j in range(i, len(newdata), self.width):
-                    newbyte ^= newdata[j]
-                self.data[cur_pos] ^= newbyte << cur_bitpos & 0xffffffffffffffff
-                self.data[0 if is_last else cur_pos + 1] ^= newbyte >> low
+            newbyte = 0
+            for j in range(i, len(newdata), self.width):
+                newbyte ^= newdata[j]
+
+            # Python doesn't have fixed-width data types, so we need to
+            # explicitly throw away extra bits.
+            self.data[cur_pos] ^= newbyte << cur_bitpos & 0xffffffffffffffff
+
+            if cur_bitpos > bitsincell - 8:
+                self.data[0 if is_last else cur_pos + 1] ^= newbyte >> bitsincell - cur_bitpos
 
             cur_bitpos += self.shift
             while cur_bitpos >= bitsincell:
