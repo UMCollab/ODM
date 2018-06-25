@@ -58,11 +58,11 @@ class QuickXORHash:
         # Convert cells to byte array
         bytedata = bytearray()
         for i in range(0, len(self.data)):
-            if i < len(self.data) - 1:
-                bytedata.extend(struct.unpack('8B', struct.pack('Q', self.data[i])))
+            chunk = struct.unpack('8B', struct.pack('Q', self.data[i]))
+            if (i + 1) * 64 <= self.width:
+                bytedata.extend(chunk)
             else:
-                # I'm not entirely sure why we end up with an extra byte...
-                bytedata.extend(struct.unpack('4B', struct.pack('I', self.data[i] & 0xffffffff)))
+                bytedata.extend(chunk[0:(int(self.width / 8 % 8))])
 
         # Convert length to byte array
         bytelen = struct.unpack('8B', struct.pack('Q', self.length))
