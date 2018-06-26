@@ -6,16 +6,17 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import json
 import os
 import re
 import requests
 import sys
 import time
 
-import json
-
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
+
+from util import quickxorhash
 
 class OneDriveClient:
     def __init__(self, config):
@@ -98,7 +99,10 @@ class OneDriveClient:
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.makedirs(destdir, 0755)
+        h = quickxorhash.QuickXORHash()
         with requests.get(url['location'], stream = True) as r:
             with open(dest, 'wb') as f:
                 for chunk in r.iter_content(chunk_size = None):
                     f.write(chunk)
+                    h.update(bytearray(chunk))
+        return h.finalize()
