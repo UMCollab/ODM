@@ -62,14 +62,15 @@ class QuickXORHash:
             if (i + 1) * 64 <= self.width:
                 b_data.extend(chunk)
             else:
-                b_data.extend(chunk[0:(int(self.width / 8 % 8))])
+                b_data.extend(chunk[0:int(self.width / 8 % 8)])
 
         # Convert length to byte array
         b_length = struct.unpack('8B', struct.pack('Q', self.length))
 
         # XOR the length with the least significant bits
+        offset = int((self.width / 8) - len(b_length))
         for i in range(0, len(b_length)):
-            b_data[int(i + (self.width / 8) - len(b_length))] ^= b_length[i]
+            b_data[i + offset] ^= b_length[i]
 
         return base64.b64encode(b_data)
 
