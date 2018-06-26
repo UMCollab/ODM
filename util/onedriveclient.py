@@ -27,7 +27,7 @@ class OneDriveClient:
 
     def _get_token(self):
         self.token = self.msgraph.fetch_token(
-            token_url = 'https://login.microsoftonline.com/{0}/oauth2/v2.0/token'.format(self.config.get('domain')),
+            token_url = 'https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.config.get('domain')),
             client_id = self.config.get('client_id'),
             client_secret = self.config.get('client_secret'),
             scope = [ 'https://graph.microsoft.com/.default' ],
@@ -38,7 +38,7 @@ class OneDriveClient:
             self._get_token()
 
         return self.msgraph.get(
-            '{0}{1}'.format(self.baseurl, path),
+            ''.join((self.baseurl, path)),
             timeout = self.config.get('timeout', 5),
             allow_redirects = False,
         )
@@ -50,7 +50,7 @@ class OneDriveClient:
             if result.status_code == 429:
                 delay = result.headers['retry-after']
                 result = None
-                print('Throttled, sleeping for {0} seconds'.format(delay))
+                print('Throttled, sleeping for {} seconds'.format(delay))
                 time.sleep(delay)
             else:
                 result.raise_for_status()
@@ -61,13 +61,13 @@ class OneDriveClient:
             return json.loads(result.content)
 
     def list_drives(self, user):
-        drives = self.get('users/{0}@{1}/drives'.format(user, self.config['domain']))['value']
+        drives = self.get('users/{}@{}/drives'.format(user, self.config['domain']))['value']
         for d in drives:
-            d['root'] = self.get('drives/{0}/root'.format(d['id']))
+            d['root'] = self.get('drives/{}/root'.format(d['id']))
         return drives
 
     def list_folder(self, folder):
-        return self.get('drives/{0}/items/{1}/children'.format(folder['parentReference']['driveId'], folder['id']))['value']
+        return self.get('drives/{}/items/{}/children'.format(folder['parentReference']['driveId'], folder['id']))['value']
 
     def expand_items(self, items):
         expanded = True
@@ -94,7 +94,7 @@ class OneDriveClient:
         return items
 
     def download_file(self, drive_id, file_id, dest):
-        url = self.get('drives/{0}/items/{1}/content'.format(drive_id, file_id))
+        url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.makedirs(destdir, 0755)
