@@ -38,32 +38,46 @@ class OneDriveClient:
         if self.token['expires_at'] > time.time():
             self._get_token()
 
+        if self.baseurl not in path:
+            path = ''.join([self.baseurl, path])
+
         return self.msgraph.get(
-            ''.join((self.baseurl, path)),
+            path,
             timeout = self.config.get('timeout', 60),
             allow_redirects = False,
         )
 
     def get(self, path):
-        print('Getting {}...'.format(path), file=sys.stderr)
         result = None
-        while not result:
+        page_result = None
+        while not page_result:
+            print('Getting {}...'.format(path), file=sys.stderr)
             try:
-                result = self._get(path)
+                page_result = self._get(path)
             except requests.exceptions.ReadTimeout as e:
                 print('Timed out...', file=sys.stderr)
-            if result.status_code == 429:
+
+            print(page_result.content)
+            if page_result.status_code == 429:
                 delay = result.headers['retry-after']
-                result = None
+                page_result = None
                 print('Throttled, sleeping for {} seconds'.format(delay), file=sys.stderr)
                 time.sleep(delay)
+            elif page_result.status_code == 302:
+                return { 'location': result.headers['location'] }
             else:
-                result.raise_for_status()
+                page_result.raise_for_status()
+                decoded = json.loads(page_result.content)
+                if result:
+                    result['value'].extend(decoded['value'])
+                else:
+                    result = decoded
+                if '@odata.nextLink' in decoded:
+                    print('Getting next page...', file=sys.stderr)
+                    path = decoded['@odata.nextLink']
+                    page_result = None
 
-        if result.status_code == 302:
-            return { 'location': result.headers['location'] }
-        else:
-            return json.loads(result.content)
+        return result
 
     def list_drives(self, user):
         drives = self.get('users/{}@{}/drives'.format(user, self.config['domain']))['value']

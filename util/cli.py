@@ -26,4 +26,6 @@ class CLI:
         with open(self.args.config, 'r') as configfile:
             self.config = yaml.safe_load(configfile)
 
+        self.config['args'] = self.args
+
         self.client = onedriveclient.OneDriveClient(self.config)
