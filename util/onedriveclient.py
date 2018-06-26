@@ -51,20 +51,18 @@ class OneDriveClient:
         result = None
         page_result = None
         while not page_result:
-            print('Getting {}...'.format(path), file=sys.stderr)
             try:
                 page_result = self._get(path)
             except requests.exceptions.ReadTimeout as e:
                 print('Timed out...', file=sys.stderr)
 
-            print(page_result.content)
             if page_result.status_code == 429:
-                delay = result.headers['retry-after']
+                delay = page_result.headers['retry-after']
                 page_result = None
                 print('Throttled, sleeping for {} seconds'.format(delay), file=sys.stderr)
                 time.sleep(delay)
             elif page_result.status_code == 302:
-                return { 'location': result.headers['location'] }
+                return { 'location': page_result.headers['location'] }
             else:
                 page_result.raise_for_status()
                 decoded = json.loads(page_result.content)
@@ -112,11 +110,18 @@ class OneDriveClient:
 
         return items
 
-    def download_file(self, drive_id, file_id, dest):
+    def download_file(self, drive_id, file_id, dest, file_hash=None):
+        if file_hash and os.path.exists(dest):
+            h = quickxorhash.QuickXORHash()
+            if h.hash_file(dest) == file_hash:
+                print('Existing file matched.', file=sys.stderr)
+                return file_hash
+
         url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.makedirs(destdir, 0755)
+
         h = quickxorhash.QuickXORHash()
         with requests.get(url['location'], stream = True) as r:
             with open(dest, 'wb') as f:

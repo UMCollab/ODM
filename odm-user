@@ -41,7 +41,7 @@ elif cli.args.action == 'download-items':
         if 'file' in item:
             dest = '/var/tmp/' + args.user + '/' + item['fullpath']
             print('Downloading {}...'.format(item['fullpath']))
-            h = client.download_file(item['parentReference']['driveId'], item['id'], dest)
+            h = client.download_file(item['parentReference']['driveId'], item['id'], dest, item['file']['hashes']['quickXorHash'])
             print('MSoft hash: {}'.format(item['file']['hashes']['quickXorHash']))
             print('Local hash: {}'.format(h))
 
