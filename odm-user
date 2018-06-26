@@ -42,10 +42,9 @@ elif cli.args.action == 'download-items':
             dest = '/var/tmp/' + args.user + '/' + item['fullpath']
             print('Downloading {}...'.format(item['fullpath']))
             client.download_file(item['parentReference']['driveId'], item['id'], dest)
-            print('Server hash: {}'.format(item['file']['hashes']['quickXorHash']))
-            q = quickxorhash.QuickXORHash()
-            q.hash_file(dest)
-            print('Local hash: {}'.format(q.finalize()))
+            print('MSoft hash: {}'.format(item['file']['hashes']['quickXorHash']))
+            h = quickxorhash.QuickXORHash()
+            print('Local hash: {}'.format(h.hash_file(dest)))
 
 else:
     print('Unsupported action {}'.format(cli.args.action))

@@ -15,5 +15,4 @@ parser.add_argument('file')
 args = parser.parse_args()
 
 q = quickxorhash.QuickXORHash()
-q.hash_file(args.file)
-print(q.finalize())
+print(q.hash_file(args.file))

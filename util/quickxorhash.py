@@ -81,3 +81,4 @@ class QuickXORHash:
                     self.update(bytearray(chunk))
                 else:
                     break
+        return self.finalize()
