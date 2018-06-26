@@ -45,13 +45,17 @@ class OneDriveClient:
         )
 
     def get(self, path):
+        print('Getting {}...'.format(path), file=sys.stderr)
         result = None
         while not result:
-            result = self._get(path)
+            try:
+                result = self._get(path)
+            except requests.exceptions.ReadTimeout as e:
+                print('Timed out...', file=sys.stderr)
             if result.status_code == 429:
                 delay = result.headers['retry-after']
                 result = None
-                print('Throttled, sleeping for {} seconds'.format(delay))
+                print('Throttled, sleeping for {} seconds'.format(delay), file=sys.stderr)
                 time.sleep(delay)
             else:
                 result.raise_for_status()
