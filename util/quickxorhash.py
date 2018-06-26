@@ -18,31 +18,37 @@ class QuickXORHash:
         # State
         self.shifted = 0
         self.length = 0
-        self.data = [0] * (int((self.width - 1) / 64) + 1)
+        self.cell = [0] * (int((self.width - 1) / 64) + 1)
 
     def update(self, data):
-        cur_pos = int(self.shifted / 64)
-        cur_bitpos = int(self.shifted % 64)
+        cell_index = int(self.shifted / 64)
+        cell_bitpos = int(self.shifted % 64)
 
-        for i in xrange(0, min(self.width, len(data))):
-            is_last = cur_pos == len(self.data) - 1
-            cell_bits = 32 if is_last else 64
+        for i in range(0, min(self.width, len(data))):
+            next_cell = cell_index + 1
+            cell_bits = 64
+            # Last cell needs to wrap around
+            if next_cell == len(self.cell):
+                next_cell = 0
+                # Last cell usually isn't a full 64 bits
+                if self.width % 64 > 0:
+                    cell_bits = self.width % 64
 
             new_byte = 0
-            for j in xrange(i, len(data), self.width):
+            for j in range(i, len(data), self.width):
                 new_byte ^= data[j]
 
             # Python doesn't have fixed-width data types, so we need to
             # explicitly throw away extra bits.
-            self.data[cur_pos] ^= new_byte << cur_bitpos & 0xffffffffffffffff
+            self.cell[cell_index] ^= new_byte << cell_bitpos & 0xffffffffffffffff
 
-            if cur_bitpos > cell_bits - 8:
-                self.data[0 if is_last else cur_pos + 1] ^= new_byte >> cell_bits - cur_bitpos
+            if cell_bitpos > cell_bits - 8:
+                self.cell[next_cell] ^= new_byte >> (cell_bits - cell_bitpos)
 
-            cur_bitpos += self.shift
-            while cur_bitpos >= cell_bits:
-                cur_pos = 0 if is_last else cur_pos + 1
-                cur_bitpos -= cell_bits
+            cell_bitpos += self.shift
+            if cell_bitpos >= cell_bits:
+                cell_index = next_cell
+                cell_bitpos -= cell_bits
 
         self.shifted += self.shift * (len(data) % self.width)
         self.shifted %= self.width
@@ -51,8 +57,8 @@ class QuickXORHash:
     def finalize(self):
         # Convert cells to byte array
         b_data = bytearray()
-        for i in xrange(0, len(self.data)):
-            chunk = struct.unpack('8B', struct.pack('Q', self.data[i]))
+        for i in range(0, len(self.cell)):
+            chunk = struct.unpack('8B', struct.pack('Q', self.cell[i]))
             if (i + 1) * 64 <= self.width:
                 b_data.extend(chunk)
             else:
@@ -62,7 +68,7 @@ class QuickXORHash:
         b_length = struct.unpack('8B', struct.pack('Q', self.length))
 
         # XOR the length with the least significant bits
-        for i in xrange(0, len(b_length)):
+        for i in range(0, len(b_length)):
             b_data[int(i + (self.width / 8) - len(b_length))] ^= b_length[i]
 
         return base64.b64encode(b_data)
