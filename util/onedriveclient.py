@@ -40,7 +40,7 @@ class OneDriveClient:
 
         return self.msgraph.get(
             ''.join((self.baseurl, path)),
-            timeout = self.config.get('timeout', 5),
+            timeout = self.config.get('timeout', 60),
             allow_redirects = False,
         )
 
