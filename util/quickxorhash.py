@@ -72,3 +72,12 @@ class QuickXORHash:
             b_data[int(i + (self.width / 8) - len(b_length))] ^= b_length[i]
 
         return base64.b64encode(b_data)
+
+    def hash_file(self, path):
+        with open(path, 'rb') as f:
+            while True:
+                chunk = f.read(65536)
+                if chunk:
+                    self.update(bytearray(chunk))
+                else:
+                    break

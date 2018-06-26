@@ -15,11 +15,5 @@ parser.add_argument('file')
 args = parser.parse_args()
 
 q = quickxorhash.QuickXORHash()
-with open(args.file, 'rb') as f:
-    while True:
-        chunk = f.read(65536)
-        if chunk:
-            q.update(bytearray(chunk))
-        else:
-            break
+q.hash_file(args.file)
 print(q.finalize())
