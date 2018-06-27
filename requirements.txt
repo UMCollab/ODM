@@ -1,3 +1,4 @@
+kitchen
 pyyaml
 requests
 requests_oauthlib
