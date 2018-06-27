@@ -15,12 +15,11 @@ from util import cli, quickxorhash
 
 cli = cli.CLI(['user', 'action'])
 client = cli.client
-args = cli.args
 
-drives = client.list_drives(args.user)
+drives = client.list_drives(cli.args.user)
 
 if cli.args.action == 'list-drives':
-    if args.verbose:
+    if cli.args.verbose:
         json.dump(drives, sys.stdout, indent = 2)
     else:
         for d in drives:
@@ -29,7 +28,7 @@ if cli.args.action == 'list-drives':
 elif cli.args.action == 'list-items':
     items = client.expand_items([drive['root'] for drive in drives])
 
-    if args.verbose:
+    if cli.args.verbose:
         json.dump(items, sys.stdout, indent = 2)
     else:
         for item in items:
@@ -39,7 +38,7 @@ elif cli.args.action == 'download-items':
     items = client.expand_items([drive['root'] for drive in drives])
     for item in items:
         if 'file' in item:
-            dest = '/var/tmp/' + args.user + '/' + item['fullpath']
+            dest = '/var/tmp/' + cli.args.user + '/' + item['fullpath']
             print('Downloading {}...'.format(item['fullpath']))
             h = client.download_file(item['parentReference']['driveId'], item['id'], dest, item['file']['hashes']['quickXorHash'])
             print('MSoft hash: {}'.format(item['file']['hashes']['quickXorHash']))

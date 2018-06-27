@@ -13,9 +13,12 @@ import yaml
 
 from util import cli, quickxorhash
 
-cli = cli.CLI(['drive', 'file'])
+cli = cli.CLI(['--dest', 'drive', 'file'])
 client = cli.client
-args = cli.args
 
-dest = '/var/tmp/' + args.file
-h = client.download_file(args.drive, args.file, dest)
+if cli.args.dest:
+    dest = cli.args.dest
+else:
+    dest = '/var/tmp/' + cli.args.file
+
+h = client.download_file(cli.args.drive, cli.args.file, dest)

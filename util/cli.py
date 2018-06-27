@@ -14,11 +14,17 @@ import yaml
 from util import onedriveclient
 
 class CLI:
-    def __init__(self, positional_args):
+    def __init__(self, args):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-c', '--config', help = 'Config file location', default = 'config.yaml')
-        parser.add_argument('-v', '--verbose', help = 'Enable verbose output', action='store_true')
-        for arg in positional_args:
+        parser.add_argument('-c', '--config',
+            help = 'Config file location',
+            default = 'config.yaml',
+        )
+        parser.add_argument('-v', '--verbose',
+            help = 'Enable verbose output',
+            action = 'store_true',
+        )
+        for arg in args:
             parser.add_argument(arg)
 
         self.args = parser.parse_args()
