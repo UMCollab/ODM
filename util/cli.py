@@ -7,6 +7,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import argparse
+import logging
 import sys
 
 import yaml
@@ -34,4 +35,11 @@ class CLI:
 
         self.config['args'] = self.args
 
-        self.client = onedriveclient.OneDriveClient(self.config)
+        self.logger = logging.getLogger(__name__)
+        if self.args.verbose:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(logging.StreamHandler(sys.stderr))
+
+        self.client = onedriveclient.OneDriveClient(self.config, self.logger)

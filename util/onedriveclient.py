@@ -19,9 +19,10 @@ from requests_oauthlib import OAuth2Session
 from util import quickxorhash
 
 class OneDriveClient:
-    def __init__(self, config):
+    def __init__(self, config, logger):
         self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.config = config
+        self.logger = logger
         client = BackendApplicationClient(client_id = config.get('client_id'))
         self.msgraph = OAuth2Session(client = client)
         self._get_token()
@@ -54,12 +55,12 @@ class OneDriveClient:
             try:
                 page_result = self._get(path)
             except requests.exceptions.ReadTimeout as e:
-                print('Timed out...', file=sys.stderr)
+                self.logger.warn('Timed out...')
 
             if page_result.status_code == 429:
                 delay = page_result.headers['retry-after']
                 page_result = None
-                print('Throttled, sleeping for {} seconds'.format(delay), file=sys.stderr)
+                self.logger.warn('Throttled, sleeping for {} seconds'.format(delay))
                 time.sleep(delay)
             elif page_result.status_code == 302:
                 return { 'location': page_result.headers['location'] }
@@ -71,7 +72,7 @@ class OneDriveClient:
                 else:
                     result = decoded
                 if '@odata.nextLink' in decoded:
-                    print('Getting next page...', file=sys.stderr)
+                    self.logger.debug('Getting next page...')
                     path = decoded['@odata.nextLink']
                     page_result = None
 
@@ -114,7 +115,7 @@ class OneDriveClient:
         if file_hash and os.path.exists(dest):
             h = quickxorhash.QuickXORHash()
             if h.hash_file(dest) == file_hash:
-                print('Existing file matched.', file = sys.stderr)
+                self.logger.debug('Existing file matched.')
                 return file_hash
 
         url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
@@ -130,6 +131,6 @@ class OneDriveClient:
                     h.update(bytearray(chunk))
         new_hash = h.finalize()
         if file_hash and file_hash != new_hash:
-            print('Hash mismatch: got {}, expected {}'.format(new_hash, file_hash), file = sys.stderr)
+            self.logger.warn('Hash mismatch: got {}, expected {}'.format(new_hash, file_hash))
             os.unlink(dest)
         return new_hash

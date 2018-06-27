@@ -37,25 +37,22 @@ elif cli.args.action == 'download-items':
 
     for item in items:
         if item['fullpath'] in exclude:
-            if cli.args.verbose:
-                print(u'Skipping excluded {}...'.format(item['fullpath']), file = sys.stderr)
-                continue
+            cli.logger.debug(u'Skipping excluded {}...'.format(item['fullpath']))
+            continue
 
         if cli.args.limit:
             if not item['fullpath'].startswith(cli.args.limit):
-                if cli.args.verbose:
-                    print(u'Skipping {}...'.format(item['fullpath']), file = sys.stderr)
+                cli.logger.debug(u'Skipping {}...'.format(item['fullpath']))
                 continue
 
         if 'file' not in item:
-            if cli.args.verbose and 'folder' not in item:
-                print(u'Skipping non-file {}...'.format(item['fullpath']), file = sys.stderr)
+            if 'folder' not in item:
+                cli.logger.debug(u'Skipping non-file {}...'.format(item['fullpath']))
             continue
 
         dest = ''.join((destdir, item['fullpath']))
-        if cli.args.verbose:
-            print(u'Downloading {} to {}...'.format(item['fullpath'], dest))
+        cli.logger.info(u'Downloading {} to {}...'.format(item['fullpath'], dest))
         client.download_file(item['parentReference']['driveId'], item['id'], dest, item['file']['hashes']['quickXorHash'])
 
 else:
-    print('Unsupported action {}'.format(cli.args.action))
+    print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)

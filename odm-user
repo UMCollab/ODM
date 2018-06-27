@@ -34,15 +34,5 @@ elif cli.args.action == 'list-items':
         for item in items:
             print(item['fullpath'])
 
-elif cli.args.action == 'download-items':
-    items = client.expand_items([drive['root'] for drive in drives])
-    for item in items:
-        if 'file' in item:
-            dest = '/var/tmp/' + cli.args.user + '/' + item['fullpath']
-            print('Downloading {}...'.format(item['fullpath']))
-            h = client.download_file(item['parentReference']['driveId'], item['id'], dest, item['file']['hashes']['quickXorHash'])
-            print('MSoft hash: {}'.format(item['file']['hashes']['quickXorHash']))
-            print('Local hash: {}'.format(h))
-
 else:
     print('Unsupported action {}'.format(cli.args.action))
