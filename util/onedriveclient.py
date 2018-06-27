@@ -110,11 +110,11 @@ class OneDriveClient:
 
         return items
 
-    def download_file(self, drive_id, file_id, dest, file_hash=None):
+    def download_file(self, drive_id, file_id, dest, file_hash = None):
         if file_hash and os.path.exists(dest):
             h = quickxorhash.QuickXORHash()
             if h.hash_file(dest) == file_hash:
-                print('Existing file matched.', file=sys.stderr)
+                print('Existing file matched.', file = sys.stderr)
                 return file_hash
 
         url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
@@ -128,4 +128,8 @@ class OneDriveClient:
                 for chunk in r.iter_content(chunk_size = None):
                     f.write(chunk)
                     h.update(bytearray(chunk))
-        return h.finalize()
+        new_hash = h.finalize()
+        if file_hash and file_hash != new_hash:
+            print('Hash mismatch: got {}, expected {}'.format(new_hash, file_hash), file = sys.stderr)
+            os.unlink(dest)
+        return new_hash

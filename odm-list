@@ -7,6 +7,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import json
+import os
 import sys
 
 from kitchen.text.converters import getwriter
@@ -15,14 +16,44 @@ from util import cli, quickxorhash
 
 sys.stdout = getwriter('utf8')(sys.stdout)
 
-cli = cli.CLI(['file', 'action'])
+cli = cli.CLI(['--dest', '--limit', '--exclude', 'file', 'action'])
 client = cli.client
 
 with open(cli.args.file, 'rb') as f:
-    inlist = json.load(f)
+    items = json.load(f)
 
 if cli.args.action == 'list-items':
-    for item in inlist:
+    for item in items:
         print(item['fullpath'])
+
+elif cli.args.action == 'download-items':
+    destdir = cli.args.dest if cli.args.dest else '/var/tmp'
+    exclude = []
+    if cli.args.exclude:
+        with open(cli.args.exclude, 'rb') as f:
+            exclude = [e.rstrip() for e in list(f)]
+
+    for item in items:
+        if item['fullpath'] in exclude:
+            if cli.args.verbose:
+                print('Skipping excluded {}...'.format(item['fullpath']), file = sys.stderr)
+                continue
+
+        if cli.args.limit:
+            if not item['fullpath'].startswith(cli.args.limit):
+                if cli.args.verbose:
+                    print('Skipping {}...'.format(item['fullpath']), file = sys.stderr)
+                continue
+
+        if 'file' not in item:
+            if cli.args.verbose and 'folder' not in item:
+                print('Skipping non-file {}...'.format(item['fullpath']), file = sys.stderr)
+            continue
+
+        dest = ''.join((destdir, item['fullpath']))
+        if cli.args.verbose:
+            print('Downloading {} to {}...'.format(item['fullpath'], dest), file = sys.stderr)
+        client.download_file(item['parentReference']['driveId'], item['id'], dest, item['file']['hashes']['quickXorHash'])
+
 else:
     print('Unsupported action {}'.format(cli.args.action))
