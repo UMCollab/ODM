@@ -14,7 +14,9 @@ from kitchen.text.converters import getwriter
 
 from util import cli, quickxorhash
 
-sys.stdout = getwriter('utf8')(sys.stdout)
+writer = getwriter('utf8')
+sys.stdout = writer(sys.stdout)
+sys.stderr = writer(sys.stderr)
 
 cli = cli.CLI(['--dest', '--limit', '--exclude', 'file', 'action'])
 client = cli.client
@@ -36,23 +38,23 @@ elif cli.args.action == 'download-items':
     for item in items:
         if item['fullpath'] in exclude:
             if cli.args.verbose:
-                print('Skipping excluded {}...'.format(item['fullpath']), file = sys.stderr)
+                print(u'Skipping excluded {}...'.format(item['fullpath']), file = sys.stderr)
                 continue
 
         if cli.args.limit:
             if not item['fullpath'].startswith(cli.args.limit):
                 if cli.args.verbose:
-                    print('Skipping {}...'.format(item['fullpath']), file = sys.stderr)
+                    print(u'Skipping {}...'.format(item['fullpath']), file = sys.stderr)
                 continue
 
         if 'file' not in item:
             if cli.args.verbose and 'folder' not in item:
-                print('Skipping non-file {}...'.format(item['fullpath']), file = sys.stderr)
+                print(u'Skipping non-file {}...'.format(item['fullpath']), file = sys.stderr)
             continue
 
         dest = ''.join((destdir, item['fullpath']))
         if cli.args.verbose:
-            print('Downloading {} to {}...'.format(item['fullpath'], dest), file = sys.stderr)
+            print(u'Downloading {} to {}...'.format(item['fullpath'], dest))
         client.download_file(item['parentReference']['driveId'], item['id'], dest, item['file']['hashes']['quickXorHash'])
 
 else:
