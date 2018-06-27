@@ -24,7 +24,7 @@ client = cli.client
 with open(cli.args.file, 'rb') as f:
     items = json.load(f)
 
-if cli.args.action == 'list-items':
+if cli.args.action == 'list-filenames':
     for item in items:
         print(item['fullpath'])
 

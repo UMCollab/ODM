@@ -19,20 +19,11 @@ client = cli.client
 drives = client.list_drives(cli.args.user)
 
 if cli.args.action == 'list-drives':
-    if cli.args.verbose:
-        json.dump(drives, sys.stdout, indent = 2)
-    else:
-        for d in drives:
-            print(d['id'])
+    json.dump(drives, sys.stdout, indent = 2)
 
 elif cli.args.action == 'list-items':
     items = client.expand_items([drive['root'] for drive in drives])
-
-    if cli.args.verbose:
-        json.dump(items, sys.stdout, indent = 2)
-    else:
-        for item in items:
-            print(item['fullpath'])
+    json.dump(items, sys.stdout, indent = 2)
 
 else:
     print('Unsupported action {}'.format(cli.args.action))
