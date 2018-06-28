@@ -23,11 +23,21 @@ class GoogleDriveClient:
         self.baseurl = 'https://www.googleapis.com/'
         self.config = config
         self.logger = logger
-        self.creds = google.oauth2.service_account.Credentials.from_service_account_file(
-            config['google']['service_credentials'],
-            subject = '{}@{}'.format(config['args'].user, config['domain']),
-            scopes = ['https://www.googleapis.com/auth/drive'],
-        )
+
+        cred_kwargs = {
+            'subject': '{}@{}'.format(config['args'].user, config['domain']),
+            'scopes': ['https://www.googleapis.com/auth/drive'],
+        }
+        if isinstance(config['google']['service_credentials'], dict):
+            self.creds = google.oauth2.service_account.Credentials.from_service_account_info(
+                config['google']['service_credentials'],
+                **cred_kwargs
+            )
+        else:
+            self.creds = google.oauth2.service_account.Credentials.from_service_account_file(
+                config['google']['service_credentials'],
+                **cred_kwargs
+            )
         self.session = google.auth.transport.requests.AuthorizedSession(self.creds)
 
     def _request(self, verb, path, **kwargs):
