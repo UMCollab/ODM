@@ -6,6 +6,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import datetime
 import json
 import os
 import sys
@@ -28,13 +29,14 @@ if cli.args.action == 'list-filenames':
     for item in items:
         print(item['fullpath'])
 
-elif cli.args.action == 'download-items':
+elif cli.args.action in ('download-items', 'download-estimate'):
     destdir = cli.args.dest if cli.args.dest else '/var/tmp'
     exclude = []
     if cli.args.exclude:
         with open(cli.args.exclude, 'rb') as f:
             exclude = [e.rstrip() for e in list(f)]
 
+    estimate = 0.0
     for item in items:
         if item['fullpath'] in exclude:
             cli.logger.debug(u'Skipping excluded {}...'.format(item['fullpath']))
@@ -52,7 +54,19 @@ elif cli.args.action == 'download-items':
 
         dest = ''.join((destdir, item['fullpath']))
         cli.logger.info(u'Downloading {} to {}...'.format(item['fullpath'], dest))
-        client.download_file(item['parentReference']['driveId'], item['id'], dest, item['file']['hashes']['quickXorHash'])
+        if cli.args.action == 'download-items':
+            client.download_file(
+                item['parentReference']['driveId'],
+                item['id'],
+                dest,
+                item['file']['hashes']['quickXorHash'],
+            )
+        else:
+            estimate += 0.7
+            estimate += item['size'] / 15730000
+
+    if cli.args.action == 'download-estimate':
+        print(str(datetime.timedelta(seconds = int(estimate))))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
