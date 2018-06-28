@@ -37,6 +37,8 @@ elif cli.args.action in ('download-items', 'download-estimate'):
             exclude = [e.rstrip() for e in list(f)]
 
     estimate = 0.0
+    size = 0
+    count = 0
     for item in items:
         if item['fullpath'] in exclude:
             cli.logger.debug(u'Skipping excluded {}...'.format(item['fullpath']))
@@ -62,11 +64,13 @@ elif cli.args.action in ('download-items', 'download-estimate'):
                 item['file']['hashes']['quickXorHash'],
             )
         else:
-            estimate += 0.7
+            size += item['size']
+            count += 1
+            estimate += 1
             estimate += item['size'] / 15294809
 
     if cli.args.action == 'download-estimate':
-        print(str(datetime.timedelta(seconds = int(estimate))))
+        print('{:.2f} MiB across {} items, estimated {!s}'.format(size / (1024 ** 2), count, datetime.timedelta(seconds = int(estimate))))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
