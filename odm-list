@@ -70,3 +70,4 @@ elif cli.args.action in ('download-items', 'download-estimate'):
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+    sys.exit(1)

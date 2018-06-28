@@ -26,4 +26,5 @@ elif cli.args.action == 'list-items':
     json.dump(items, sys.stdout, indent = 2)
 
 else:
-    print('Unsupported action {}'.format(cli.args.action))
+    print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+    sys.exit(1)
