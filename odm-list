@@ -63,7 +63,7 @@ elif cli.args.action in ('download-items', 'download-estimate'):
             )
         else:
             estimate += 0.7
-            estimate += item['size'] / 15730000
+            estimate += item['size'] / 15294809
 
     if cli.args.action == 'download-estimate':
         print(str(datetime.timedelta(seconds = int(estimate))))

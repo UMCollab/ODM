@@ -126,7 +126,7 @@ class OneDriveClient:
         h = quickxorhash.QuickXORHash()
         with requests.get(url['location'], stream = True) as r:
             with open(dest, 'wb') as f:
-                for chunk in r.iter_content(chunk_size = 1048576):
+                for chunk in r.iter_content(chunk_size = 1024 * 1024):
                     f.write(chunk)
                     h.update(bytearray(chunk))
         new_hash = h.finalize()

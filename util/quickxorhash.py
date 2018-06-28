@@ -77,7 +77,7 @@ class QuickXORHash:
     def hash_file(self, path):
         with open(path, 'rb') as f:
             while True:
-                chunk = f.read(65536)
+                chunk = f.read(512 * 1024)
                 if chunk:
                     self.update(bytearray(chunk))
                 else:
