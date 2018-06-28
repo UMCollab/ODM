@@ -8,8 +8,13 @@ domain: umich.edu
 # https://login.microsoftonline.com/common/adminconsent?client_id=foo&state=12345&redirect_uri=http://localhost/myapp/permissions
 # while logged in as an admin. It's fine to have the app redirect pointing
 # at an unusable URL, becase the redirect doesn't carry any useful information.
-client_id: foo
-client_secret: bar
+microsoft:
+  client_id: foo
+  client_secret: bar
+
+# This should be a Google service account with the needful.
+google:
+  credentials: /path/to/oauth2service.json
 
 # Request timeout
 timeout: 6

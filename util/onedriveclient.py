@@ -23,15 +23,15 @@ class OneDriveClient:
         self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.config = config
         self.logger = logger
-        client = BackendApplicationClient(client_id = config.get('client_id'))
+        client = BackendApplicationClient(client_id = config['microsoft']['client_id'])
         self.msgraph = OAuth2Session(client = client)
         self._get_token()
 
     def _get_token(self):
         self.token = self.msgraph.fetch_token(
             token_url = 'https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.config.get('domain')),
-            client_id = self.config.get('client_id'),
-            client_secret = self.config.get('client_secret'),
+            client_id = self.config['microsoft']['client_id'],
+            client_secret = self.config['microsoft']['client_secret'],
             scope = [ 'https://graph.microsoft.com/.default' ],
         )
 

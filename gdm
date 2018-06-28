@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+# This file is part of onedrive-magic and distributed under the terms of the
+# MIT license. See COPYING.
+
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
+import json
+import os
+import sys
+
+from util import cli
+
+cli = cli.CLI(['path', 'user'], 'google')
+client = cli.client
+dir_map = {}
+
+dir_map['.'] = client.create_folder('Migrated from OneDrive')
+
+for root, dirs, files in os.walk(cli.args.path):
+    parent = os.path.relpath(root, cli.args.path)
+    for dname in dirs:
+        relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
+        cli.logger.info(u'Creating folder {}...'.format(relpath))
+        dir_map[relpath] = client.create_folder(dname, dir_map[parent])
+    for fname in files:
+        fpath = '/'.join((root, fname))
+        relpath = os.path.relpath(fpath, cli.args.path)
+        cli.logger.info(u'Uploading {}...'.format(relpath))
+        client.upload_file(fpath, fname, dir_map[parent])

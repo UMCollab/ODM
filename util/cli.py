@@ -12,10 +12,10 @@ import sys
 
 import yaml
 
-from util import onedriveclient
+from util import googledriveclient, onedriveclient
 
 class CLI:
-    def __init__(self, args):
+    def __init__(self, args, client='microsoft'):
         parser = argparse.ArgumentParser()
         parser.add_argument('-c', '--config',
             help = 'Config file location',
@@ -42,4 +42,7 @@ class CLI:
             self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logging.StreamHandler(sys.stderr))
 
-        self.client = onedriveclient.OneDriveClient(self.config, self.logger)
+        if client == 'google':
+            self.client = googledriveclient.GoogleDriveClient(self.config, self.logger)
+        elif client == 'microsoft':
+            self.client = onedriveclient.OneDriveClient(self.config, self.logger)
