@@ -36,11 +36,13 @@ class CLI:
         self.config['args'] = self.args
 
         self.logger = logging.getLogger(__name__)
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter('%(asctime)s %(message)s', '%Y-%m-%dT%H:%M:%S'))
         if self.args.verbose:
             self.logger.setLevel(logging.DEBUG)
         else:
             self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(logging.StreamHandler(sys.stderr))
+        self.logger.addHandler(handler)
 
         if client == 'google':
             self.client = googledriveclient.GoogleDriveClient(self.config, self.logger)
