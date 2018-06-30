@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import json
 import os
+import random
 import re
 import requests
 import sys
@@ -51,14 +52,16 @@ class OneDriveClient:
     def get(self, path):
         result = None
         page_result = None
+        attempt = 0
+
         while not page_result:
+            attempt += 1
             try:
                 page_result = self._get(path)
-            except requests.exceptions.ReadTimeout as e:
-                self.logger.warn('Timed out')
-                continue
-            except requests.exceptions.ConnectionError as e:
-                self.logger.warn('Connection error')
+            except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+                delay = random.uniform(0, min(300, 3 * 2 ** attempt))
+                self.logger.warn('requests exception, sleeping for {} seconds'.format(delay))
+                time.sleep(delay)
                 continue
 
             if page_result.status_code == 429:
@@ -79,6 +82,7 @@ class OneDriveClient:
                     self.logger.debug('Getting next page...')
                     path = decoded['@odata.nextLink']
                     page_result = None
+                    attempt = 0
 
         return result
 
