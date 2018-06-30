@@ -55,7 +55,11 @@ class OneDriveClient:
             try:
                 page_result = self._get(path)
             except requests.exceptions.ReadTimeout as e:
-                self.logger.warn('Timed out...')
+                self.logger.warn('Timed out')
+                continue
+            except requests.exceptions.ConnectionError as e:
+                self.logger.warn('Connection error')
+                continue
 
             if page_result.status_code == 429:
                 delay = page_result.headers['retry-after']

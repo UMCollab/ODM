@@ -19,7 +19,7 @@ writer = getwriter('utf8')
 sys.stdout = writer(sys.stdout)
 sys.stderr = writer(sys.stderr)
 
-cli = cli.CLI(['--dest', '--limit', '--exclude', 'file', 'action'])
+cli = cli.CLI(['--dest', '--limit', '--exclude', '--start', 'file', 'action'])
 client = cli.client
 
 with open(cli.args.file, 'rb') as f:
@@ -36,10 +36,18 @@ elif cli.args.action in ('download-items', 'download-estimate'):
         with open(cli.args.exclude, 'rb') as f:
             exclude = [e.rstrip() for e in list(f)]
 
-    estimate = 0.0
     size = 0
     count = 0
+    started = not cli.args.start
+
     for item in items:
+        if not started:
+            if item['fullpath'] == cli.args.start:
+                started = True
+            else:
+                cli.logger.debug(u'Start point not reached, skipping {}'.format(item['fullpath']))
+                continue
+
         if item['fullpath'] in exclude:
             cli.logger.debug(u'Skipping excluded {}...'.format(item['fullpath']))
             continue
@@ -66,11 +74,9 @@ elif cli.args.action in ('download-items', 'download-estimate'):
         else:
             size += item['size']
             count += 1
-            estimate += 1
-            estimate += item['size'] / 15294809
 
     if cli.args.action == 'download-estimate':
-        print('{:.2f} MiB across {} items, estimated {!s}'.format(size / (1024 ** 2), count, datetime.timedelta(seconds = int(estimate))))
+        print('{:.2f} MiB across {} items, estimated {!s}'.format(size / (1024 ** 2), count, datetime.timedelta(seconds = int(count + (size / 15294809)))))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
