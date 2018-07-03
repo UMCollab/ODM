@@ -56,20 +56,28 @@ class OneDriveClient:
 
         while not page_result:
             attempt += 1
+            error = None
+            delay = random.uniform(0, min(300, 3 * 2 ** attempt))
             try:
                 page_result = self._get(path)
-            except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
-                delay = random.uniform(0, min(300, 3 * 2 ** attempt))
-                self.logger.warn('requests exception, sleeping for {} seconds'.format(delay))
-                time.sleep(delay)
-                continue
+            except requests.exceptions.ReadTimeout:
+                error = 'read timed out'
+            except requests.exceptions.ConnectionError:
+                error = 'connection failed'
 
             if page_result.status_code == 429:
                 delay = page_result.headers['retry-after']
-                page_result = None
-                self.logger.warn('Throttled, sleeping for {} seconds'.format(delay))
+                error = 'Throttled'
+            elif page_result.status_code == 504:
+                error = 'Gateway timeout'
+
+            if error:
+                self.logger.warn('{}, sleeping for {} seconds'.format(error, delay))
                 time.sleep(delay)
-            elif page_result.status_code == 302:
+                page_result = None
+                continue
+
+            if page_result.status_code == 302:
                 return { 'location': page_result.headers['location'] }
             else:
                 page_result.raise_for_status()
