@@ -16,12 +16,15 @@ from util import cli, quickxorhash
 cli = cli.CLI(['user', 'action'])
 client = cli.client
 
-drives = client.list_drives(cli.args.user)
+if cli.args.action == 'show':
+    json.dump(client.show_user(cli.args.user), sys.stdout, indent = 2)
 
-if cli.args.action == 'list-drives':
+elif cli.args.action == 'list-drives':
+    drives = client.list_drives(cli.args.user)
     json.dump(drives, sys.stdout, indent = 2)
 
 elif cli.args.action == 'list-items':
+    drives = client.list_drives(cli.args.user)
     items = client.expand_items([drive['root'] for drive in drives])
     json.dump(items, sys.stdout, indent = 2)
 

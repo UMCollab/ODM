@@ -86,6 +86,13 @@ class OneDriveClient:
 
         return result
 
+    def list_users(self):
+        users = self.get('users')
+        return users
+
+    def show_user(self, user):
+        return self.get('/users/{}@{}'.format(user, self.config['domain']))
+
     def list_drives(self, user):
         drives = self.get('users/{}@{}/drives'.format(user, self.config['domain']))['value']
         for d in drives:
