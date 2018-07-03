@@ -88,7 +88,7 @@ class OneDriveClient:
 
     def list_users(self):
         users = self.get('users')
-        return users
+        return users['value']
 
     def show_user(self, user):
         return self.get('/users/{}@{}'.format(user, self.config['domain']))
