@@ -1,4 +1,47 @@
-# Downloading from OneDrive
+# ODM
+
+ODM is a set of tools for administratively downloading content from OneDrive
+and uploading it to Google Drive without the involvement of the end user.
+
+ODM is currently in beta. It has undergone some testing, but the codebase is
+still very new and in flux.
+
+## Setting up your environment
+
+This tool was written and tested using Python 2.7.14 on Linux. Portions of the
+code were also tested under various versions of Python >= 3.4.
+
+We recommend using a virtualenv to install ODM's Python dependencies.
+
+* Run ./init.sh to set up the virtualenv
+* When you want to use ODM, source env-setup.sh (`. env-setup.sh`) to set up the
+  necessary environment variables.
+
+## Credentials
+
+The odm tools require credentials for an authorized Azure AD 2.0 client.
+The gdm tools require credentials for an authorized Google service account.
+
+### Azure AD 2.0
+
+* Register your client at https://apps.dev.microsoft.com/ (Azure AD 2.0 clients
+  are also called "Converged applications")
+    * Under "Application Secrets", select "Generate New Password"; use this as
+      the `client_secret` in your ODM config.
+    * Under "Platforms", add a web platform with a redirect URL of `https://localhost` (with the authentication flow we're using this URL is not useful in any way, but it can't be omitted)
+    * Under "Microsoft Graph Permssions", add the following
+      "Application Permissions":
+        * User.Read.All
+        * Files.Read.All
+* Grant permissions for your tenant by visiting https://login.microsoftonline.com/common/adminconsent?client_id=FOO&redirect_uri=https://localhost while logged in as an admin.
+    * FOO should be replaced with the client ID that you registered
+    * If this step is succesful you will be redirected to https://localhost/?admin_consent=True&tenant=BAR, which will probably fail to load.
+
+### Google Service Account
+
+* Do the needful
+
+## Downloading from OneDrive
 ```
 odm-user ezekielh list-items > ezekielh.json
 odm-list ezekielh.json list-filenames | grep ^/testdir > ezekielh.exclude
@@ -9,7 +52,7 @@ Quick benchmarks:
 * 0.68 seconds per file with negligibly tiny files
 * 51.3 GiB/hour for one large file
 
-# Uploading to Google Drive
+## Uploading to Google Drive
 ```
 gdm /var/tmp/ezekielh ezekielh
 ```
