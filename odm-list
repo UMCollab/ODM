@@ -23,6 +23,7 @@ cli = cli.CLI(['--dest', '--limit', '--exclude', '--start', 'file', 'action'])
 client = cli.client
 
 ts_start = datetime.datetime.now()
+retval = 0
 
 with open(cli.args.file, 'rb') as f:
     items = json.load(f)
@@ -86,6 +87,7 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
                         result = None
                 if result is None:
                     cli.logger.warn(u'Failed to download {}'.format(dest))
+                    retval = 1
         elif cli.args.action == 'verify-items':
             if client.verify_file(
                 dest,
@@ -95,6 +97,7 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
                 cli.logger.info(u'Verified {}'.format(dest))
             else:
                 cli.logger.warn(u'Failed to verify {}'.format(dest))
+                retval = 1
         elif cli.args.action == 'list-filenames':
             print(item['fullpath'])
 
@@ -117,3 +120,5 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
     sys.exit(1)
+
+sys.exit(retval)
