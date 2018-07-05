@@ -15,7 +15,7 @@ code were also tested under various versions of Python >= 3.4.
 
 We recommend using a virtualenv to install ODM's Python dependencies.
 
-* Run ./init.sh to set up the virtualenv
+* Run `init.sh` to set up the virtualenv
 * When you want to use ODM, source env-setup.sh (`. env-setup.sh`) to set up the
   necessary environment variables.
 
@@ -27,7 +27,7 @@ The gdm tool requires credentials for an authorized Google service account.
 ### Azure AD 2.0
 
 * Register your client at https://apps.dev.microsoft.com/ (Azure AD 2.0 clients
-  are also called "Converged applications")
+  are also called "Converged applications").
     * Under `Application Secrets` select `Generate New Password`; use this as
       the `client_secret` in your ODM config.
     * Under `Platforms`, add a web platform with a redirect URL of
