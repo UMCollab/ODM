@@ -60,10 +60,12 @@ class OneDriveClient:
             delay = random.uniform(0, min(300, 3 * 2 ** attempt))
             try:
                 page_result = self._get(path)
-            except requests.exceptions.ReadTimeout:
-                error = 'read timed out'
-            except requests.exceptions.ConnectionError:
-                error = 'connection failed'
+            except (
+                requests.exceptions.ReadTimeout,
+                requests.exceptions.ConnectionError,
+            ) as e:
+                self.logger.warn(e)
+                error = 'requests error'
 
             if page_result.status_code == 429:
                 delay = page_result.headers['retry-after']
@@ -146,14 +148,14 @@ class OneDriveClient:
         if size is not None:
             stat = os.stat(dest)
             if stat.st_size != size:
-                self.logger.debug(u'{} is the wrong size; expected {}, got {}'.format(dest, size, stat.st_size))
+                self.logger.debug(u'{} is the wrong size: expected {}, got {}'.format(dest, size, stat.st_size))
                 return False
 
         if file_hash:
             h = quickxorhash.QuickXORHash()
             real_hash = h.hash_file(dest)
             if real_hash != file_hash:
-                self.logger.debug(u'{} has the wrong hash; expected {}, got {}'.format(dest, file_hash, real_hash))
+                self.logger.debug(u'{} has the wrong hash: expected {}, got {}'.format(dest, file_hash, real_hash))
                 return False
 
         return True
@@ -166,9 +168,18 @@ class OneDriveClient:
             os.makedirs(destdir, 0755)
 
         h = quickxorhash.QuickXORHash()
-        with requests.get(url['location'], stream = True) as r:
-            with open(dest, 'wb') as f:
-                for chunk in r.iter_content(chunk_size = 1024 * 1024):
-                    f.write(chunk)
-                    h.update(bytearray(chunk))
+        try:
+            with requests.get(url['location'], stream = True) as r:
+                r.raise_for_status()
+                with open(dest, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size = 1024 * 1024):
+                        f.write(chunk)
+                        h.update(bytearray(chunk))
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ReadTimeout,
+            requests.exceptions.ConnectionError
+        ) as e:
+            self.logger.warn(e)
+            return None
         return h.finalize()

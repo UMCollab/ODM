@@ -72,13 +72,20 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
                 cli.logger.info('Verified {}'.format(dest))
             else:
                 cli.logger.info(u'Downloading {} to {}'.format(item['fullpath'], dest))
-                download_hash = client.download_file(
-                    item['parentReference']['driveId'],
-                    item['id'],
-                    dest,
-                )
-                if download_hash != item['file']['hashes']['quickXorHash']:
-                    cli.logger.info(u'Failed to verify {}'.format(dest))
+                attempt = 0
+                result = None
+                while attempt < 3 and result is None:
+                    attempt += 1
+                    result = client.download_file(
+                        item['parentReference']['driveId'],
+                        item['id'],
+                        dest,
+                    )
+                    if result != item['file']['hashes']['quickXorHash']:
+                        cli.logger.info(u'{} has the wrong hash, retrying'.format(dest))
+                        result = None
+                if result is None:
+                    cli.logger.warn(u'Failed to download {}'.format(dest))
         elif cli.args.action == 'verify-items':
             if client.verify_file(
                 dest,
