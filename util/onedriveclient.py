@@ -160,21 +160,21 @@ class OneDriveClient:
 
         return True
 
-    def download_file(self, drive_id, file_id, dest):
-        url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
-
+    def _download(self, url, dest, calculate_hash = False):
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.makedirs(destdir, 0755)
 
-        h = quickxorhash.QuickXORHash()
+        if calculate_hash:
+            h = quickxorhash.QuickXORHash()
         try:
-            with requests.get(url['location'], stream = True) as r:
+            with self.msgraph.get(url, stream = True) as r:
                 r.raise_for_status()
                 with open(dest, 'wb') as f:
                     for chunk in r.iter_content(chunk_size = 1024 * 1024):
                         f.write(chunk)
-                        h.update(bytearray(chunk))
+                        if calculate_hash:
+                            h.update(bytearray(chunk))
         except (
             requests.exceptions.HTTPError,
             requests.exceptions.ReadTimeout,
@@ -182,4 +182,21 @@ class OneDriveClient:
         ) as e:
             self.logger.warn(e)
             return None
-        return h.finalize()
+        if calculate_hash:
+            return h.finalize()
+        return True
+
+    def download_file(self, drive_id, file_id, dest):
+        url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
+
+        return self._download(url['location'], dest, True)
+
+    def list_notebooks(self, user):
+        notebooks = self.get('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))['value']
+        for n in notebooks:
+            for s in n['sections']:
+                s['pages'] = self.get(s['pagesUrl'])['value']
+        return notebooks
+
+    def download_page(self, page_url, dest):
+        return self._download(page_url + '?includeInkML=true', dest)
