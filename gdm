@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# This file is part of onedrive-magic and distributed under the terms of the
+# This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
 
 from __future__ import (absolute_import, division, print_function)
