@@ -134,14 +134,33 @@ class OneDriveClient:
 
         return items
 
-    def download_file(self, drive_id, file_id, dest, file_hash = None):
-        if file_hash and os.path.exists(dest):
-            h = quickxorhash.QuickXORHash()
-            if h.hash_file(dest) == file_hash:
-                self.logger.debug('Existing file matched.')
-                return file_hash
+    def verify_file(self, dest, size, file_hash = None):
+        if size is None and file_hash is None:
+            self.logger.debug(u'No size or hash provided for {}'.format(dest))
+            return False
 
+        if not os.path.exists(dest):
+           self.logger.debug(u'{} does not exist'.format(dest))
+           return False
+
+        if size is not None:
+            stat = os.stat(dest)
+            if stat.st_size != size:
+                self.logger.debug(u'{} is the wrong size; expected {}, got {}'.format(dest, size, stat.st_size))
+                return False
+
+        if file_hash:
+            h = quickxorhash.QuickXORHash()
+            real_hash = h.hash_file(dest)
+            if real_hash != file_hash:
+                self.logger.debug(u'{} has the wrong hash; expected {}, got {}'.format(dest, file_hash, real_hash))
+                return False
+
+        return True
+
+    def download_file(self, drive_id, file_id, dest):
         url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
+
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.makedirs(destdir, 0755)
@@ -152,8 +171,4 @@ class OneDriveClient:
                 for chunk in r.iter_content(chunk_size = 1024 * 1024):
                     f.write(chunk)
                     h.update(bytearray(chunk))
-        new_hash = h.finalize()
-        if file_hash and file_hash != new_hash:
-            self.logger.warn('Hash mismatch: got {}, expected {}'.format(new_hash, file_hash))
-            os.unlink(dest)
-        return new_hash
+        return h.finalize()

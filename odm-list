@@ -22,14 +22,12 @@ sys.stderr = writer(sys.stderr)
 cli = cli.CLI(['--dest', '--limit', '--exclude', '--start', 'file', 'action'])
 client = cli.client
 
+ts_start = datetime.datetime.now()
+
 with open(cli.args.file, 'rb') as f:
     items = json.load(f)
 
-if cli.args.action == 'list-filenames':
-    for item in items:
-        print(item['fullpath'])
-
-elif cli.args.action in ('download-items', 'download-estimate'):
+if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 'verify-items'):
     destdir = cli.args.dest if cli.args.dest else '/var/tmp'
     exclude = []
     if cli.args.exclude:
@@ -45,38 +43,69 @@ elif cli.args.action in ('download-items', 'download-estimate'):
             if item['fullpath'] == cli.args.start:
                 started = True
             else:
-                cli.logger.debug(u'Start point not reached, skipping {}'.format(item['fullpath']))
+                cli.logger.debug(u'Start point not reached, skipping item {}'.format(item['fullpath']))
                 continue
 
         if item['fullpath'] in exclude:
-            cli.logger.debug(u'Skipping excluded {}...'.format(item['fullpath']))
+            cli.logger.debug(u'Skipping excluded item {}'.format(item['fullpath']))
             continue
 
         if cli.args.limit:
             if not item['fullpath'].startswith(cli.args.limit):
-                cli.logger.debug(u'Skipping {}...'.format(item['fullpath']))
+                cli.logger.debug(u'Skipping non-matching item {}'.format(item['fullpath']))
                 continue
 
         if 'file' not in item:
             if 'folder' not in item:
-                cli.logger.debug(u'Skipping non-file {}...'.format(item['fullpath']))
+                cli.logger.debug(u'Skipping non-file {}'.format(item['fullpath']))
             continue
 
+        cli.logger.debug(u'Working on {}'.format(item['fullpath']))
+
         dest = ''.join((destdir, item['fullpath']))
-        cli.logger.info(u'Downloading {} to {}...'.format(item['fullpath'], dest))
         if cli.args.action == 'download-items':
-            client.download_file(
-                item['parentReference']['driveId'],
-                item['id'],
+            if client.verify_file(
                 dest,
+                item['size'],
                 item['file']['hashes']['quickXorHash'],
-            )
-        else:
-            size += item['size']
-            count += 1
+            ):
+                cli.logger.info('Verified {}'.format(dest))
+            else:
+                cli.logger.info(u'Downloading {} to {}'.format(item['fullpath'], dest))
+                download_hash = client.download_file(
+                    item['parentReference']['driveId'],
+                    item['id'],
+                    dest,
+                )
+                if download_hash != item['file']['hashes']['quickXorHash']:
+                    cli.logger.info(u'Failed to verify {}'.format(dest))
+        elif cli.args.action == 'verify-items':
+            if client.verify_file(
+                dest,
+                item['size'],
+                item['file']['hashes']['quickXorHash']
+            ):
+                cli.logger.info(u'Verified {}'.format(dest))
+            else:
+                cli.logger.warn(u'Failed to verify {}'.format(dest))
+        elif cli.args.action == 'list-filenames':
+            print(item['fullpath'])
+
+        size += item['size']
+        count += 1
 
     if cli.args.action == 'download-estimate':
-        print('{:.2f} MiB across {} items, estimated {!s}'.format(size / (1024 ** 2), count, datetime.timedelta(seconds = int(count + (size / 15294809)))))
+        delta_msg = 'estimated time {!s}'.format(
+            datetime.timedelta(seconds = int(count + (size / 15294809)))
+        )
+    else:
+        delta_msg = 'elapsed time {!s}'.format(datetime.datetime.now() - ts_start)
+
+    cli.logger.info('{:.2f} MiB across {} items, {}'.format(
+        size / (1024 ** 2),
+        count,
+        delta_msg
+    ))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
