@@ -219,6 +219,8 @@ class OneDriveClient:
         raw_file = '{}.{}'.format(dest, 'text_html')
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
+
+        # Download images and update references
         for img in html.find_all('img'):
             img_id = img['data-fullres-src'].split('/')[7].split('!')[0]
             img_file = '{}/{}.{}'.format(os.path.dirname(dest), img_id, img['data-fullres-src-type'].split('/')[1])
@@ -227,6 +229,17 @@ class OneDriveClient:
             del img['data-fullres-src']
             del img['data-fullres-src-type']
             del img['data-src-type']
+
+        # Download objects and turn them into links
+        for obj in html.find_all('object'):
+            obj_id = obj['data'].split('/')[7].split('!')[0]
+            obj_file = '{}/{}.{}'.format(os.path.dirname(dest), obj_id, obj['data-attachment'])
+            link = html.new_tag('a', href = os.path.basename(obj_file), download = obj['data-attachment'])
+            link.append(obj['data-attachment'])
+            self._download(obj['data'], obj_file)
+            obj.replace_with(link)
+
+        # Add InkML SVG, if it was generated
         if not converter.empty:
             div = html.new_tag('div', style = "position:absolute;left:0px;top:0px")
             # Technically this should be several different SVGs in divs at
