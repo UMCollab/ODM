@@ -18,6 +18,7 @@ import requests
 import requests_oauthlib
 import requests_toolbelt
 
+from bs4 import BeautifulSoup
 from oauthlib.oauth2 import BackendApplicationClient
 
 from util import inkml, quickxorhash
@@ -218,6 +219,19 @@ class OneDriveClient:
 
     def download_page(self, page_url, dest):
         result = self._download(page_url + '?includeInkML=true', dest)
-        converter = inkml.InkML('{}.{}'.format(dest, 'application_inkml+xml'))
-        converter.save('{}.{}'.format(dest, 'svg'))
+        ink_file = '{}.{}'.format(dest, 'application_inkml+xml')
+        converter = inkml.InkML(ink_file)
+        svg_file = '{}.{}'.format(dest, 'svg')
+        converter.save(svg_file)
+        raw_file = '{}.{}'.format(dest, 'text_html')
+        with open(raw_file, 'rb') as f:
+            html = BeautifulSoup(f, 'lxml')
+        if not converter.empty:
+            div = html.new_tag('div', style = "position:absolute;left:0px;top:0px")
+            html.body.append(div)
+            img = html.new_tag('img', src = os.path.basename(svg_file), height = '1238px')
+            div.append(img)
+        html_file = '{}.{}'.format(dest, 'html')
+        with open(html_file, 'wb') as f:
+            f.write(html.prettify(formatter = 'html').encode('utf-8'))
         return result
