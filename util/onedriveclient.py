@@ -228,7 +228,11 @@ class OneDriveClient:
             html = BeautifulSoup(f, 'lxml')
         if not converter.empty:
             div = html.new_tag('div', style = "position:absolute;left:0px;top:0px")
-            html.body.append(div)
+            # Technically this should be several different SVGs in divs at
+            # multiple positions in the body, but rendering the full InkML
+            # beneath everything is the best we can do with what the API
+            # actually gives us.
+            html.body.insert(0, div)
             img = html.new_tag('img', src = os.path.basename(svg_file), height = '1238px')
             div.append(img)
         html_file = '{}.{}'.format(dest, 'html')
