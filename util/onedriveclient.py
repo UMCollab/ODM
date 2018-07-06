@@ -14,8 +14,11 @@ import requests
 import sys
 import time
 
+import requests
+import requests_oauthlib
+import requests_toolbelt
+
 from oauthlib.oauth2 import BackendApplicationClient
-from requests_oauthlib import OAuth2Session
 
 from util import quickxorhash
 
@@ -25,7 +28,7 @@ class OneDriveClient:
         self.config = config
         self.logger = logger
         client = BackendApplicationClient(client_id = config['microsoft']['client_id'])
-        self.msgraph = OAuth2Session(client = client)
+        self.msgraph = requests_oauthlib.OAuth2Session(client = client)
         self._get_token()
 
     def _get_token(self):
@@ -160,6 +163,13 @@ class OneDriveClient:
 
         return True
 
+    def _write_download(self, dest, request, hasher = None):
+        with open(dest, 'wb') as f:
+            for chunk in request.iter_content(chunk_size = 1024 * 1024):
+                f.write(chunk)
+                if hasher is not None:
+                    hasher.update(bytearray(chunk))
+
     def _download(self, url, dest, calculate_hash = False):
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
@@ -167,14 +177,22 @@ class OneDriveClient:
 
         if calculate_hash:
             h = quickxorhash.QuickXORHash()
+
         try:
             with self.msgraph.get(url, stream = True) as r:
                 r.raise_for_status()
-                with open(dest, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size = 1024 * 1024):
-                        f.write(chunk)
-                        if calculate_hash:
-                            h.update(bytearray(chunk))
+                if r.headers['content-type'].startswith('multipart/'):
+                    decoder = requests_toolbelt.MultipartDecoder.from_response(r)
+                    for part in decoder.parts:
+                        with open('{}.{}'.format(dest, part.headers['content-type'].split(';')[0].replace('/', '_')), 'wb') as f:
+                            f.write(part.content)
+                else:
+                    with open(dest, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size = 1024 * 1024):
+                            f.write(chunk)
+                            if h is not None:
+                                h.update(bytearray(chunk))
+                    self._write_download(dest, r, h)
         except (
             requests.exceptions.HTTPError,
             requests.exceptions.ReadTimeout,

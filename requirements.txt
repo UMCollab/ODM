@@ -3,3 +3,4 @@ kitchen
 pyyaml
 requests
 requests_oauthlib
+requests_toolbelt
