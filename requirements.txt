@@ -7,4 +7,3 @@ requests
 requests_oauthlib
 requests_toolbelt
 svgwrite
-xmltodict
