@@ -220,7 +220,7 @@ class OneDriveClient:
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
         for img in html.find_all('img'):
-            img_id = img['data-fullres-src'].split('/')[7]
+            img_id = img['data-fullres-src'].split('/')[7].split('!')[0]
             img_file = '{}/{}.{}'.format(os.path.dirname(dest), img_id, img['data-fullres-src-type'].split('/')[1])
             img['src'] = os.path.basename(img_file)
             self._download(img['data-fullres-src'], img_file)
