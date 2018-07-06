@@ -224,6 +224,9 @@ class OneDriveClient:
             img_file = '{}/{}.{}'.format(os.path.dirname(dest), img_id, img['data-fullres-src-type'].split('/')[1])
             img['src'] = os.path.basename(img_file)
             self._download(img['data-fullres-src'], img_file)
+            del img['data-fullres-src']
+            del img['data-fullres-src-type']
+            del img['data-src-type']
         if not converter.empty:
             div = html.new_tag('div', style = "position:absolute;left:0px;top:0px")
             # Technically this should be several different SVGs in divs at
