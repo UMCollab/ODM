@@ -20,7 +20,7 @@ import requests_toolbelt
 
 from oauthlib.oauth2 import BackendApplicationClient
 
-from util import quickxorhash
+from util import inkml, quickxorhash
 
 class OneDriveClient:
     def __init__(self, config, logger):
@@ -217,4 +217,7 @@ class OneDriveClient:
         return notebooks
 
     def download_page(self, page_url, dest):
-        return self._download(page_url + '?includeInkML=true', dest)
+        result = self._download(page_url + '?includeInkML=true', dest)
+        converter = inkml.InkML('{}.{}'.format(dest, 'application_inkml+xml'))
+        converter.save('{}.{}'.format(dest, 'svg'))
+        return result
