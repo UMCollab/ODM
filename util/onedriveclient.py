@@ -164,18 +164,12 @@ class OneDriveClient:
 
         return True
 
-    def _write_download(self, dest, request, hasher = None):
-        with open(dest, 'wb') as f:
-            for chunk in request.iter_content(chunk_size = 1024 * 1024):
-                f.write(chunk)
-                if hasher is not None:
-                    hasher.update(bytearray(chunk))
-
     def _download(self, url, dest, calculate_hash = False):
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.makedirs(destdir, 0755)
 
+        h = None
         if calculate_hash:
             h = quickxorhash.QuickXORHash()
 
@@ -193,7 +187,6 @@ class OneDriveClient:
                             f.write(chunk)
                             if h is not None:
                                 h.update(bytearray(chunk))
-                    self._write_download(dest, r, h)
         except (
             requests.exceptions.HTTPError,
             requests.exceptions.ReadTimeout,
@@ -226,6 +219,11 @@ class OneDriveClient:
         raw_file = '{}.{}'.format(dest, 'text_html')
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
+        for img in html.find_all('img'):
+            img_id = img['data-fullres-src'].split('/')[7]
+            img_file = '{}/{}.{}'.format(os.path.dirname(dest), img_id, img['data-fullres-src-type'].split('/')[1])
+            img['src'] = os.path.basename(img_file)
+            self._download(img['data-fullres-src'], img_file)
         if not converter.empty:
             div = html.new_tag('div', style = "position:absolute;left:0px;top:0px")
             # Technically this should be several different SVGs in divs at
