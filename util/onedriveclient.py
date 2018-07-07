@@ -220,6 +220,11 @@ class OneDriveClient:
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
 
+        # Check for failed export. Notably, mathematical expressions don't work.
+        for div in html.find_all('div'):
+            if ' Processing ParagraphNode failed ' in div.contents:
+                self.logger.warn('{} contained unexportable data'.format(dest))
+
         # Download images and update references
         for img in html.find_all('img'):
             img_id = img['data-fullres-src'].split('/')[7].split('!')[0]
@@ -247,6 +252,8 @@ class OneDriveClient:
             # beneath everything is the best we can do with what the API
             # actually gives us.
             html.body.insert(0, div)
+            # The InkML canvas is (hardcoded?) 32767 himetric square, which
+            # is approximately 1238 pixels
             img = html.new_tag('img', src = os.path.basename(svg_file), height = '1238px')
             div.append(img)
         html_file = '{}.{}'.format(dest, 'html')

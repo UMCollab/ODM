@@ -36,6 +36,7 @@ elif cli.args.action == 'download-notebooks':
     for n in notebooks:
         for s in n['sections']:
             for page in s['pages']:
+                cli.logger.debug('Downloading page {}'.format(page['id']))
                 client.download_page(page['contentUrl'], '/var/tmp/{}/{}/{}/{}'.format(cli.args.user, n['displayName'], s['displayName'], page['id'].split('!')[0]))
 
 else:
