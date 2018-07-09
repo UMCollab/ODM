@@ -293,9 +293,11 @@ class OneDriveClient:
                 # I don't think this should happen, but best to deal with it
                 self.logger.debug('Mismatch between InkML and InkNode placeholders, defaulting to top layer')
                 html.body.append(div)
-            # The InkML canvas is (hardcoded?) 32767 himetric square, which
-            # is approximately 1238 pixels
-            img = html.new_tag('img', src = os.path.basename(ink), height = '1238px')
+            img = html.new_tag(
+                'img',
+                src = os.path.basename(ink),
+                height = '{}px'.format(converter.pixel_dimensions['Y'])
+            )
             div.append(img)
         html_file = '{}.{}'.format(dest, 'html')
         with open(html_file, 'wb') as f:

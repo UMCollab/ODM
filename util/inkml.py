@@ -23,16 +23,37 @@ class InkML:
                 brush_dict[prop['name']] = prop['value']
             self.brushes[brush['xml:id']] = brush_dict
 
+        self.dimensions = {
+            'X': 0,
+            'Y': 0,
+        }
+
         self.contexts = {}
         for ctx in ink.find_all('inkml:context'):
+            context = {
+                'channels': []
+            }
             for fmt in ctx.find_all('inkml:traceFormat'):
                 if ctx['xml:id'] in self.contexts:
                     raise ValueError("unsupported inkML (multiple trace formats?)")
-                self.contexts[ctx['xml:id']] = [x['name'] for x in fmt.find_all('inkml:channel')]
+                for channel in fmt.find_all('inkml:channel'):
+                    context['channels'].append(channel['name'])
+                    if 'max' in channel:
+                        if channel['name'] in self.dimensions and channel['max'] > self.dimensions[channel['name']]:
+                            self.dimensions[channel['name']] = channel['max']
+                    else:
+                        self.dimensions[channel['name']] = int(channel['max'])
+
+                self.contexts[ctx['xml:id']] = context
+
+        self.pixel_dimensions = {
+            'X': int(self.dimensions['X'] * 0.0377952803522),
+            'Y': int(self.dimensions['Y'] * 0.0377952803522),
+        }
 
     def _parse_channels(self, context, point):
         retval = {}
-        for chan, value in zip(self.contexts[context], point.split(' ')):
+        for chan, value in zip(self.contexts[context]['channels'], point.split(' ')):
             retval[chan] = value
         return retval
 
@@ -45,9 +66,8 @@ class InkML:
             if canvas is None:
                 if '{}' in dest:
                     real_dest = dest.format(iteration)
-                    print(real_dest)
                     self.traces.append(real_dest)
-                canvas = svgwrite.Drawing(real_dest, (32767, 32767), profile='tiny')
+                canvas = svgwrite.Drawing(real_dest, (self.dimensions['X'], self.dimensions['Y']), profile='tiny')
             brush = self.brushes[trace['brushRef'][1:]]
             extra = {
                 'stroke': brush['color'],
