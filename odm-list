@@ -57,18 +57,22 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
                 continue
 
         if 'file' not in item:
-            if 'folder' not in item:
+            if 'folder' not in item and 'package' not in item:
                 cli.logger.debug(u'Skipping non-file {}'.format(item['fullpath']))
             continue
 
         cli.logger.debug(u'Working on {}'.format(item['fullpath']))
 
-        dest = ''.join((destdir, item['fullpath']))
+        dest = ''.join([destdir, item['fullpath']])
+        digest = None
+        if 'hashes' in item['file']:
+            digest = item['file']['hashes']['quickXorHash']
+
         if cli.args.action == 'download-items':
             if client.verify_file(
                 dest,
                 item['size'],
-                item['file']['hashes']['quickXorHash'],
+                digest,
             ):
                 cli.logger.info('Verified {}'.format(dest))
             else:
@@ -82,7 +86,7 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
                         item['id'],
                         dest,
                     )
-                    if result != item['file']['hashes']['quickXorHash']:
+                    if digest and result != digest:
                         cli.logger.info(u'{} has the wrong hash, retrying'.format(dest))
                         result = None
                 if result is None:
@@ -92,7 +96,7 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
             if client.verify_file(
                 dest,
                 item['size'],
-                item['file']['hashes']['quickXorHash']
+                digest,
             ):
                 cli.logger.info(u'Verified {}'.format(dest))
             else:

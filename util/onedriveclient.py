@@ -150,7 +150,7 @@ class OneDriveClient:
         while expanded:
             expanded = False
             for item in items:
-                if 'folder' in item and 'expanded' not in item:
+                if ('folder' in item or 'package' in item) and 'expanded' not in item:
                     items.extend(self.list_folder(item))
                     item['expanded'] = True
                     expanded = True
