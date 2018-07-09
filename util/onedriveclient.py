@@ -243,8 +243,8 @@ class OneDriveClient:
         result = self._download(page_url + '?includeInkML=true', dest)
         ink_file = '{}.{}'.format(dest, 'application_inkml+xml')
         converter = inkml.InkML(ink_file)
-        svg_file = '{}.{}'.format(dest, 'svg')
-        converter.save(svg_file)
+        svg_file = '{}.{}'.format(dest, '{}.svg')
+        converter.save(svg_file, True)
         raw_file = '{}.{}'.format(dest, 'text_html')
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
@@ -282,16 +282,20 @@ class OneDriveClient:
                 f.write(base64.b64decode(KETSUBAN))
 
         # Add InkML SVG, if it was generated
-        if not converter.empty:
+        for ink in converter.traces:
             div = html.new_tag('div', style = "position:absolute;left:0px;top:0px;pointer-events:none")
-            # Technically this should be several different SVGs in divs at
-            # multiple positions in the body, but rendering the full InkML
-            # beneath everything is the best we can do with what the API
-            # actually gives us.
-            html.body.append(div)
+            replaced = False
+            for child in html.body.children:
+                if child == ' InkNode is not supported ' and not replaced:
+                    child.replace_with(div)
+                    replaced = True
+            if not replaced:
+                # I don't think this should happen, but best to deal with it
+                self.logger.debug('Mismatch between InkML and InkNode placeholders, defaulting to top layer')
+                html.body.append(div)
             # The InkML canvas is (hardcoded?) 32767 himetric square, which
             # is approximately 1238 pixels
-            img = html.new_tag('img', src = os.path.basename(svg_file), height = '1238px')
+            img = html.new_tag('img', src = os.path.basename(ink), height = '1238px')
             div.append(img)
         html_file = '{}.{}'.format(dest, 'html')
         with open(html_file, 'wb') as f:
