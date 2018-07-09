@@ -6,6 +6,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import base64
 import json
 import os
 import random
@@ -22,6 +23,34 @@ from bs4 import BeautifulSoup
 from oauthlib.oauth2 import BackendApplicationClient
 
 from util import inkml, quickxorhash
+
+KETSUBAN = '''
+iVBORw0KGgoAAAANSUhEUgAAAMkAAADhCAYAAABiOZFeAAAFVElEQVR42u3dvW1bMRSAUffuvGNG
+SJsRPIen8wpKKzzAFHl1L3+s8wGqZMUIxFPQ5CPf3iRpZh/v77f7V29//3z++Gr97DP/TuRzvmFB
+AokggUSLuwVrDdLoYK8A5BsWJJAIEkgECSR6DSQZg7sCrG9YkEAiSCDRoUgq5g9Z8xVIBAkkggQS
+QQKJzkUysv6RMSHPQNLKNyxIIBEkkGhx31//bvev6vnJyPpKxrqMb1iQQCJIIBEkkGjvro/v3oOp
+eC/rEV2P7woSSAQJJDqk6wC7zlGyX9G5BSSCBBJBAokggUS/s4p1korHfqP7xnzDggQSQQKJFtda
+07i+Wj/X+14UVPT3+YYFCSSCBBJBAon2bvZpixV/AHBgtiCBRJBAooPmJNVPEc44nM46iSCBRJBA
+Ikgg0bkT9+oB3VrTiL6skwgSSAQJJNq4rG3tFVveo/Mj6ySCBBJBAokggUTnIsmYVLe2249AyPj9
+vmFBAokggUSLm3E4Xe+aRnSLjK3yggQSQQKJIIFE59aaWK9eJ4msmTjBUZBAIkgg0eZIIvOMR2sj
+vXOQ6M9aJxEkkAgSSAQJJDq36wDLuIxn5NFe97gLEkgECSR6MSTRE1Gigzvjc9ZJBAkkggQSQQKJ
+zi1rW3vv2kjVffBOSxEkkAgSSLRpFdvTK+5h9GSiIIFEkEAiSCDRa0zcKw63zj6VceQPCr5hQQKJ
+IIFEG89Jsu4uqb6G2pxEkEAiSCARJJAor+gjqzPuKawY7Bn/pq3ykEACiSCBRBPmCFnbRKJb5Xtf
+WddQu6IaEkggESSQCBJIVFP0RMUokqw9Ur0HWGed/Nj7nhEFCSSQQAIJJFowJ/lpDlIB5vqzkAgS
+SAQJJIIEEkHS+4eBilNPZqyT2LsFCSSQQAIJJGoUPb1k9Tb66kPmzEkECSSCBBJBAonmVLF3a2SA
+RddNetdQsu5M9PguJJBAIkggUdI6ScbTgFl3GFafbFJxcJ0RBQkkkEACCSSCBBKtmbhHB2YGyqzT
+UqITd5f4QAIJJJBAAokGkPSeQhJ9qrA1+FpbZLK2ntiWIkggESSQCBJItPc6yewTHKOnpfTu65q9
+/d6IggQSSCCBBBI9mJNUX++8+qnFiu0skEACCSSQQAKJIIFE8Xa6qz3rEdrq39f6Y4QRBQkkkEAC
+CSS6NONwuvtaaxoVSCrWflprNkYUJJBAAgkkkAgSSDTWdTBkbJUfeS96AkvGvq7oq/WIsBEFCSSQ
+QAIJJHowJ8m4NzC6LSX6ZGJr/tAa4NH3rJNAAgkkggQSQQKJzkUyAqF38hx9fDf6nnUSSCCBRJBA
+oifWSSruBMnY4h79XPWayRW6EQUJJJBAAgkkggQSPYekupFLgzLWSWa8TNwhgQQSSCCBRBshmXEo
+d/UdJO4ngQQSSAQJJIIEEr0GkurTJB2YLUggESSQaEKz1xSyBnQ1tOgjBEYUJJBAAgkkkAgSSLT3
+xL3iXsToAd0jJ0haJ4EEEkgECST6hUgq5ha9B9BFt/QbUZBAAgkkkEAiSCDRHCSz719fuf9r5P9k
+REECCSSQQAKJLu20Bb3i9824T9H9JJBAAgkkkEAiSCDRfCQVdyZmbZXPgB59GVGQQAIJJJBAoqR1
+kpFBGh2IGZ/LWkPxZCIkkEAiSCARJJBo74l79YQ4Wtbju63PucQHEkgggQQSSFSAZMY29+g8Z+X2
+eyMKEkgggQQSSAQJJFozce8dVLNPXanYfm+dBBJIIBEkkGigUw6Zq/j9FWCNKEgggQQSSCCRJEmS
+JEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSjuo/MassmDD1NGYAAAAASUVORK5CYII=
+'''
 
 class OneDriveClient:
     def __init__(self, config, logger):
@@ -220,11 +249,6 @@ class OneDriveClient:
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
 
-        # Check for failed export. Notably, mathematical expressions don't work.
-        for div in html.find_all('div'):
-            if ' Processing ParagraphNode failed ' in div.contents:
-                self.logger.warn('{} contained unexportable data'.format(dest))
-
         # Download images and update references
         for img in html.find_all('img'):
             img_id = img['data-fullres-src'].split('/')[7].split('!')[0]
@@ -244,14 +268,27 @@ class OneDriveClient:
             self._download(obj['data'], obj_file)
             obj.replace_with(link)
 
+        # Check for failed export. Notably, mathematical expressions don't work.
+        unexported = False
+        for div in html.find_all('div'):
+            if ' Processing ParagraphNode failed ' in div.contents:
+                unexported = True
+                img = html.new_tag('img', src = 'ketsuban.png')
+                div.append(img)
+
+        if unexported:
+            self.logger.warn('{} contained unexportable data'.format(dest))
+            with open('{}/ketsuban.png'.format(os.path.dirname(dest)), 'wb') as f:
+                f.write(base64.b64decode(KETSUBAN))
+
         # Add InkML SVG, if it was generated
         if not converter.empty:
-            div = html.new_tag('div', style = "position:absolute;left:0px;top:0px")
+            div = html.new_tag('div', style = "position:absolute;left:0px;top:0px;pointer-events:none")
             # Technically this should be several different SVGs in divs at
             # multiple positions in the body, but rendering the full InkML
             # beneath everything is the best we can do with what the API
             # actually gives us.
-            html.body.insert(0, div)
+            html.body.append(div)
             # The InkML canvas is (hardcoded?) 32767 himetric square, which
             # is approximately 1238 pixels
             img = html.new_tag('img', src = os.path.basename(svg_file), height = '1238px')
