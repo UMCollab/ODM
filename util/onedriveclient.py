@@ -258,7 +258,7 @@ class OneDriveClient:
             img['src'] = 'data/' + os.path.basename(img_file)
             self._download(img['data-fullres-src'], img_file)
             for cruft in ('data-fullres-src', 'data-fullres-src-type', 'data-src-type'):
-                if cruft in img:
+                if img.get(cruft):
                     del img[cruft]
 
         # Download objects and turn them into links
