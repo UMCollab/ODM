@@ -240,11 +240,15 @@ class OneDriveClient:
         return notebooks
 
     def download_page(self, page_url, dest):
+        # quirks are less faithful to the official rendering, but more amusing
+        # to me
+        quirky = False
+
         result = self._download(page_url + '?includeInkML=true', dest)
         ink_file = '{}.{}'.format(dest, 'application_inkml+xml')
         converter = inkml.InkML(ink_file)
         svg_file = '{}.{}'.format(dest, '{}.svg')
-        converter.save(svg_file, True)
+        converter.save(svg_file, quirky)
         raw_file = '{}.{}'.format(dest, 'text_html')
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
@@ -273,8 +277,10 @@ class OneDriveClient:
         for div in html.find_all('div'):
             if ' Processing ParagraphNode failed ' in div.contents:
                 unexported = True
-                img = html.new_tag('img', src = 'ketsuban.png')
-                div.append(img)
+                if quirky:
+                    # Add a visual indicator of missing data
+                    img = html.new_tag('img', src = 'ketsuban.png')
+                    div.append(img)
 
         if unexported:
             self.logger.warn('{} contained unexportable data'.format(dest))
@@ -285,10 +291,14 @@ class OneDriveClient:
         for ink in converter.traces:
             div = html.new_tag('div', style = "position:absolute;left:0px;top:0px;pointer-events:none")
             replaced = False
-            for child in html.body.children:
-                if child == ' InkNode is not supported ' and not replaced:
-                    child.replace_with(div)
-                    replaced = True
+            if quirky:
+                # OneNote Online renders ink on top of other contents, not at
+                # its normal Z location. I like this code so I'm leaving it in,
+                # but disabling it by default.
+                for child in html.body.children:
+                    if child == ' InkNode is not supported ' and not replaced:
+                        child.replace_with(div)
+                        replaced = True
             if not replaced:
                 # I don't think this should happen, but best to deal with it
                 self.logger.debug('Mismatch between InkML and InkNode placeholders, defaulting to top layer')
