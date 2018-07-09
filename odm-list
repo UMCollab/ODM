@@ -26,10 +26,15 @@ ts_start = datetime.datetime.now()
 retval = 0
 
 with open(cli.args.file, 'rb') as f:
-    items = json.load(f)
+    metadata = json.load(f)
 
-if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 'verify-items'):
-    destdir = cli.args.dest if cli.args.dest else '/var/tmp'
+destdir = cli.args.dest if cli.args.dest else '/var/tmp'
+
+if cli.args.action == 'convert-notebooks':
+    for book in metadata['notebooks']:
+        client.convert_notebook(book, destdir)
+
+elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 'verify-items'):
     exclude = []
     if cli.args.exclude:
         with open(cli.args.exclude, 'rb') as f:
@@ -39,7 +44,7 @@ if cli.args.action in ('download-items', 'download-estimate', 'list-filenames', 
     count = 0
     started = not cli.args.start
 
-    for item in items:
+    for item in metadata['items']:
         if not started:
             if item['fullpath'] == cli.args.start:
                 started = True

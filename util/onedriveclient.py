@@ -239,35 +239,37 @@ class OneDriveClient:
                 s['pages'] = self.get(s['pagesUrl'])['value']
         return notebooks
 
-    def download_page(self, page_url, dest):
-        # quirks are less faithful to the official rendering, but more amusing
-        # to me
-        quirky = False
-
-        result = self._download(page_url + '?includeInkML=true', dest)
-        ink_file = '{}.{}'.format(dest, 'application_inkml+xml')
+    def _convert_page(self, page_url, dest, quirky):
+        if not os.path.exists(dest + '/data'):
+            os.makedirs(dest + '/data', 0755)
+        result = self._download(page_url, dest + '/raw/api_response')
+        ink_file = '{}/raw/api_response.{}'.format(dest, 'application_inkml+xml')
         converter = inkml.InkML(ink_file)
-        svg_file = '{}.{}'.format(dest, '{}.svg')
+        svg_file = '{}/data/ink.{}'.format(dest, '{}.svg')
         converter.save(svg_file, quirky)
-        raw_file = '{}.{}'.format(dest, 'text_html')
+        raw_file = '{}/raw/api_response.{}'.format(dest, 'text_html')
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
 
         # Download images and update references
         for img in html.find_all('img'):
             img_id = img['data-fullres-src'].split('/')[7].split('!')[0]
-            img_file = '{}/{}.{}'.format(os.path.dirname(dest), img_id, img['data-fullres-src-type'].split('/')[1])
-            img['src'] = os.path.basename(img_file)
+            img_file = '{}/data/{}.{}'.format(dest, img_id, img['data-fullres-src-type'].split('/')[1])
+            img['src'] = 'data/' + os.path.basename(img_file)
             self._download(img['data-fullres-src'], img_file)
-            del img['data-fullres-src']
-            del img['data-fullres-src-type']
-            del img['data-src-type']
+            for cruft in ('data-fullres-src', 'data-fullres-src-type', 'data-src-type'):
+                if cruft in img:
+                    del img[cruft]
 
         # Download objects and turn them into links
         for obj in html.find_all('object'):
-            obj_id = obj['data'].split('/')[7].split('!')[0]
-            obj_file = '{}/{}.{}'.format(os.path.dirname(dest), obj_id, obj['data-attachment'])
-            link = html.new_tag('a', href = os.path.basename(obj_file), download = obj['data-attachment'])
+            obj_id = obj['data'].split('/')[7]
+            obj_file = '{}/data/{}.{}'.format(dest, obj_id, obj['data-attachment'])
+            link = html.new_tag(
+                'a',
+                href = 'data/' + os.path.basename(obj_file),
+                download = obj['data-attachment']
+            )
             link.append(obj['data-attachment'])
             self._download(obj['data'], obj_file)
             obj.replace_with(link)
@@ -279,12 +281,12 @@ class OneDriveClient:
                 unexported = True
                 if quirky:
                     # Add a visual indicator of missing data
-                    img = html.new_tag('img', src = 'ketsuban.png')
+                    img = html.new_tag('img', src = 'data/ketsuban.png')
                     div.append(img)
 
         if unexported:
-            self.logger.warn('{} contained unexportable data'.format(dest))
-            with open('{}/ketsuban.png'.format(os.path.dirname(dest)), 'wb') as f:
+            self.logger.warn(u'{} contained unexportable data'.format(dest))
+            with open(dest + '/data/ketsuban.png', 'wb') as f:
                 f.write(base64.b64decode(KETSUBAN))
 
         # Add InkML SVG, if it was generated
@@ -305,11 +307,29 @@ class OneDriveClient:
                 html.body.append(div)
             img = html.new_tag(
                 'img',
-                src = os.path.basename(ink),
+                src = 'data/' + os.path.basename(ink),
                 height = '{}px'.format(converter.pixel_dimensions['Y'])
             )
             div.append(img)
-        html_file = '{}.{}'.format(dest, 'html')
-        with open(html_file, 'wb') as f:
+
+        with open(dest + '/index.html', 'wb') as f:
             f.write(html.prettify(formatter = 'html').encode('utf-8'))
         return result
+
+    def convert_notebook(self, metadata, destdir, quirky = False):
+        # quirk mode is less faithful to the official rendering, but more
+        # amusing to me
+        for section in metadata['sections']:
+            for page in section['pages']:
+                dest = '/'.join([
+                    destdir,
+                    metadata['displayName'],
+                    section['displayName'],
+                    'pages',
+                    page['id']
+                ])
+                self._convert_page(
+                    page['contentUrl'] + '?includeInkML=true',
+                    dest,
+                    quirky
+                )

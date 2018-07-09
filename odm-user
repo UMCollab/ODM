@@ -26,18 +26,8 @@ elif cli.args.action == 'list-drives':
 elif cli.args.action == 'list-items':
     drives = client.list_drives(cli.args.user)
     items = client.expand_items([drive['root'] for drive in drives])
-    json.dump(items, sys.stdout, indent = 2)
-
-elif cli.args.action == 'list-notebooks':
-    json.dump(client.list_notebooks(cli.args.user), sys.stdout, indent = 2)
-
-elif cli.args.action == 'download-notebooks':
     notebooks = client.list_notebooks(cli.args.user)
-    for n in notebooks:
-        for s in n['sections']:
-            for page in s['pages']:
-                cli.logger.debug('Downloading page {}'.format(page['id']))
-                client.download_page(page['contentUrl'], '/var/tmp/{}/{}/{}/{}'.format(cli.args.user, n['displayName'], s['displayName'], page['id'].split('!')[0]))
+    json.dump({ 'items': items, 'notebooks': notebooks }, sys.stdout, indent = 2)
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
