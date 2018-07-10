@@ -302,8 +302,6 @@ class OneDriveClient:
                         child.replace_with(div)
                         replaced = True
             if not replaced:
-                # I don't think this should happen, but best to deal with it
-                self.logger.debug('Mismatch between InkML and InkNode placeholders, defaulting to top layer')
                 html.body.append(div)
             img = html.new_tag(
                 'img',
