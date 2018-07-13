@@ -325,17 +325,38 @@ class OneDriveClient:
     def convert_notebook(self, metadata, destdir, quirky = False):
         # quirk mode is less faithful to the official rendering, but more
         # amusing to me
+        html = BeautifulSoup('<html><head></head><body></body></html>', 'lxml')
+        title = html.new_tag('title')
+        title.string = metadata['displayName']
+        html.head.append(title)
+        basedir = '/'.join([destdir, metadata['displayName']])
+        if not os.path.exists(basedir):
+            os.makedirs(basedir, 0755)
         for section in metadata['sections']:
+            div = html.new_tag('div')
+            html.body.append(div)
+            heading = html.new_tag('h2')
+            heading.string = section['displayName']
+            div.append(heading)
+            page_list = html.new_tag('ul')
+            div.append(page_list)
             for page in section['pages']:
-                dest = '/'.join([
-                    destdir,
-                    metadata['displayName'],
-                    section['displayName'],
-                    'pages',
-                    page['id']
-                ])
+                pagedir = '/'.join([section['displayName'], 'pages', page['id']])
                 self._convert_page(
                     page['contentUrl'] + '?includeInkML=true',
-                    dest,
+                    '/'.join([basedir, pagedir]),
                     quirky
                 )
+                link = html.new_tag(
+                    'a',
+                    href = '/'.join([pagedir, 'index.html']),
+                )
+                link.string = page['title'] if page['title'] else 'Untitled Page'
+                li = html.new_tag('li')
+                li.append(link)
+                page_list.append(li)
+        with open(
+            '/'.join([destdir, metadata['displayName'], 'index.html']),
+            'wb'
+        ) as f:
+            f.write(html.prettify(formatter = 'html').encode('utf-8'))
