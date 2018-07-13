@@ -114,6 +114,8 @@ class OneDriveClient:
 
             if page_result.status_code == 302:
                 return { 'location': page_result.headers['location'] }
+            elif page_result.status_code == 404:
+                return None
             else:
                 page_result.raise_for_status()
                 decoded = json.loads(page_result.content)
@@ -131,16 +133,20 @@ class OneDriveClient:
 
     def list_users(self):
         users = self.get('users')
-        return users['value']
+        if users:
+            return users['value']
+        return []
 
     def show_user(self, user):
         return self.get('/users/{}@{}'.format(user, self.config['domain']))
 
     def list_drives(self, user):
-        drives = self.get('users/{}@{}/drives'.format(user, self.config['domain']))['value']
-        for d in drives:
-            d['root'] = self.get('drives/{}/root'.format(d['id']))
-        return drives
+        drives = self.get('users/{}@{}/drives'.format(user, self.config['domain']))
+        if drives:
+            for d in drives['value']:
+                d['root'] = self.get('drives/{}/root'.format(d['id']))
+            return drives['value']
+        return []
 
     def list_folder(self, folder):
         return self.get('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo'.format(folder['parentReference']['driveId'], folder['id']))['value']
@@ -233,11 +239,13 @@ class OneDriveClient:
         return self._download(url['location'], dest, True)
 
     def list_notebooks(self, user):
-        notebooks = self.get('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))['value']
-        for n in notebooks:
-            for s in n['sections']:
-                s['pages'] = self.get(s['pagesUrl'])['value']
-        return notebooks
+        notebooks = self.get('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))
+        if notebooks:
+            for n in notebooks['value']:
+                for s in n['sections']:
+                    s['pages'] = self.get(s['pagesUrl'])['value']
+            return notebooks['value']
+        return []
 
     def _convert_page(self, page_url, dest, quirky):
         if not os.path.exists(dest + '/data'):

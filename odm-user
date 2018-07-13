@@ -17,17 +17,26 @@ cli = cli.CLI(['user', 'action'])
 client = cli.client
 
 if cli.args.action == 'show':
-    json.dump(client.show_user(cli.args.user), sys.stdout, indent = 2)
+    user = client.show_user(cli.args.user)
+    if user:
+        print(json.dumps(client.show_user(cli.args.user), indent = 2))
+    else:
+        print('User {} not found'.format(cli.args.user), file = sys.stderr)
+        sys.exit(1)
 
 elif cli.args.action == 'list-drives':
     drives = client.list_drives(cli.args.user)
-    json.dump(drives, sys.stdout, indent = 2)
+    print(json.dumps(drives, indent = 2))
 
 elif cli.args.action == 'list-items':
+    if not client.show_user(cli.args.user):
+        print('User {} not found'.format(cli.args.user), file = sys.stderr)
+        sys.exit(1)
+
     drives = client.list_drives(cli.args.user)
     items = client.expand_items([drive['root'] for drive in drives])
     notebooks = client.list_notebooks(cli.args.user)
-    json.dump({ 'items': items, 'notebooks': notebooks }, sys.stdout, indent = 2)
+    print(json.dumps({ 'items': items, 'notebooks': notebooks }, indent = 2))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)

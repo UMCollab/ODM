@@ -17,7 +17,7 @@ cli = cli.CLI(['action'])
 client = cli.client
 
 if cli.args.action == 'list-users':
-    json.dump(client.list_users(), sys.stdout, indent = 2)
+    print(json.dumps(client.list_users(), indent = 2))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
