@@ -247,15 +247,16 @@ class OneDriveClient:
             return notebooks['value']
         return []
 
-    def _convert_page(self, page_url, dest, quirky):
+    def _convert_page(self, page_url, page_name, dest, quirky):
         if not os.path.exists(dest + '/data'):
             os.makedirs(dest + '/data', 0755)
-        result = self._download(page_url, dest + '/raw/api_response')
-        ink_file = '{}/raw/api_response.{}'.format(dest, 'application_inkml+xml')
+        raw_path = '/'.join([dest, 'raw', page_name, 'api_response'])
+        result = self._download(page_url, raw_path)
+        ink_file = '.'.join([raw_path, 'application_inkml+xml'])
         converter = inkml.InkML(ink_file)
-        svg_file = '{}/data/ink.{}'.format(dest, '{}.svg')
+        svg_file = '{}/data/{}.ink.{}'.format(dest, page_name, '{}.svg')
         converter.save(svg_file, quirky)
-        raw_file = '{}/raw/api_response.{}'.format(dest, 'text_html')
+        raw_file = '.'.join([raw_path, 'text_html'])
         with open(raw_file, 'rb') as f:
             html = BeautifulSoup(f, 'lxml')
 
@@ -318,7 +319,7 @@ class OneDriveClient:
             )
             div.append(img)
 
-        with open(dest + '/index.html', 'wb') as f:
+        with open('{}/{}.html'.format(dest, page_name), 'wb') as f:
             f.write(html.prettify(formatter = 'html').encode('utf-8'))
         return result
 
@@ -329,9 +330,11 @@ class OneDriveClient:
         title = html.new_tag('title')
         title.string = metadata['displayName']
         html.head.append(title)
+
         basedir = '/'.join([destdir, metadata['displayName']])
         if not os.path.exists(basedir):
             os.makedirs(basedir, 0755)
+
         for section in metadata['sections']:
             div = html.new_tag('div')
             html.body.append(div)
@@ -340,23 +343,20 @@ class OneDriveClient:
             div.append(heading)
             page_list = html.new_tag('ul')
             div.append(page_list)
+
             for page in section['pages']:
-                pagedir = '/'.join([section['displayName'], 'pages', page['id']])
                 self._convert_page(
                     page['contentUrl'] + '?includeInkML=true',
-                    '/'.join([basedir, pagedir]),
-                    quirky
+                    page['id'],
+                    basedir,
+                    quirky,
                 )
-                link = html.new_tag(
-                    'a',
-                    href = '/'.join([pagedir, 'index.html']),
-                )
+
+                link = html.new_tag('a', href = page['id'] + '.html')
                 link.string = page['title'] if page['title'] else 'Untitled Page'
                 li = html.new_tag('li')
                 li.append(link)
                 page_list.append(li)
-        with open(
-            '/'.join([destdir, metadata['displayName'], 'index.html']),
-            'wb'
-        ) as f:
+
+        with open('/'.join([destdir, metadata['displayName'], 'index.html']), 'wb') as f:
             f.write(html.prettify(formatter = 'html').encode('utf-8'))
