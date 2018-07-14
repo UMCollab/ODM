@@ -162,14 +162,15 @@ class OneDriveClient:
                     expanded = True
                 if 'fullpath' not in item:
                     if 'path' in item['parentReference']:
-                        item['fullpath'] = '/'.join((
-                            re.sub(
-                                '/drives/[^/]+/root:',
-                                '',
-                                item['parentReference']['path'],
-                            ),
-                            item['name']
-                        ))
+                        parent = re.sub(
+                            '/drives/[^/]+/root:/{0,1}',
+                            '',
+                            item['parentReference']['path']
+                        )
+                        if parent:
+                            item['fullpath'] = '/'.join([parent, item['name']])
+                        else:
+                            item['fullpath'] = item['name']
                     else:
                         item['fullpath'] = '/'
 

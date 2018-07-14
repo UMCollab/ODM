@@ -68,7 +68,7 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
 
         cli.logger.debug(u'Working on {}'.format(item['fullpath']))
 
-        dest = ''.join([destdir, item['fullpath']])
+        dest = '/'.join([destdir, item['fullpath']])
         digest = None
         if 'hashes' in item['file']:
             digest = item['file']['hashes']['quickXorHash']

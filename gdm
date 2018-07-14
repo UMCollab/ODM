@@ -52,13 +52,17 @@ elif cli.args.action == 'verify-files':
             relpath = os.path.relpath(fpath, cli.args.path)
             if dir_map[parent]:
                 existing = client.verify_file(fpath, fname, dir_map[parent])
-                if existing and existing['verified']:
-                    cli.logger.info(u'Verified {}'.format(relpath))
+                if existing:
+                    if existing['verified']:
+                        cli.logger.info(u'Verified {}'.format(relpath))
+                    else:
+                        cli.logger.warn(u'Failed to verify {}: digest mismatch'.format(relpath))
+                        retval = 1
                 else:
-                    cli.logger.warn(u'Failed to verify {}'.format(relpath))
+                    cli.logger.warn(u'Failed to verify {}: not found'.format(relpath))
                     retval = 1
             else:
-                cli.logger.warn(u'Cannot verify {}'.format(relpath))
+                cli.logger.warn(u'Failed to verify {}: parent folder does not exist'.format(relpath))
                 retval = 1
 
 else:

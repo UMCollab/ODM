@@ -51,7 +51,7 @@ The gdm tool requires credentials for an authorized Google service account.
 ## Downloading from OneDrive
 ```
 odm-user ezekielh list-items > ezekielh.json
-odm-list ezekielh.json list-filenames | grep ^/testdir > ezekielh.exclude
+odm-list ezekielh.json list-filenames | grep ^testdir > ezekielh.exclude
 odm-list ezekielh.json download-estimate --exclude ezekielh.exclude
 odm-list ezekielh.json download-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude
 odm-list ezekielh.json verify-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude -v
