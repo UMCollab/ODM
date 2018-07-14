@@ -37,6 +37,7 @@ The gdm tool requires credentials for an authorized Google service account.
       Permissions`:
         * User.Read.All
         * Files.Read.All
+        * Notes.Read.All
 * Grant permissions for your tenant by visiting
   https://login.microsoftonline.com/common/adminconsent?client_id=FOO&redirect_uri=https://localhost
   while logged in as an admin.
@@ -54,6 +55,7 @@ odm-list ezekielh.json list-filenames | grep ^/testdir > ezekielh.exclude
 odm-list ezekielh.json download-estimate --exclude ezekielh.exclude
 odm-list ezekielh.json download-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude
 odm-list ezekielh.json verify-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude -v
+odm-list ezekielh.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
 ```
 
 Quick benchmarks:
