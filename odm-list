@@ -79,7 +79,7 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
                 item['size'],
                 digest,
             ):
-                cli.logger.info('Verified {}'.format(dest))
+                cli.logger.info(u'Verified {}'.format(dest))
             else:
                 cli.logger.info(u'Downloading {} to {}'.format(item['fullpath'], dest))
                 attempt = 0

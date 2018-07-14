@@ -62,7 +62,8 @@ Quick benchmarks:
 
 ## Uploading to Google Drive
 ```
-gdm /var/tmp/ezekielh ezekielh
+gdm /var/tmp/ezekielh ezekielh upload-files --dest "Magically Delicious"
+gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
 ```
 
 Quick benchmarks:

@@ -80,11 +80,16 @@ class GoogleDriveClient:
         )
         return response
 
-    def create_folder(self, name, parent = None):
+    def find_folder(self, name, parent = None):
         existing = self.find_item(name, parent).json()
-        if len(existing['files']) != 0:
-            self.logger.debug('Folder already exists.')
-            return existing['files'][0]['id']
+        if len(existing['files']) > 0:
+            return existing['files'][0]
+        return None
+
+    def create_folder(self, name, parent = None):
+        existing = self.find_folder(name, parent)
+        if existing:
+            return existing['id']
 
         payload = {
             'name': name,
@@ -98,6 +103,23 @@ class GoogleDriveClient:
             json = payload
         ).json()['id']
 
+    def verify_file(self, file_name, name, parent):
+        existing = self.find_item(name, parent).json()
+        if len(existing['files']) == 0:
+            return None
+
+        h = md5()
+        with open(file_name, 'rb') as f:
+            while True:
+                block = f.read(64 * 1024)
+                if block:
+                    h.update(block)
+                else:
+                    break
+        ret = existing['files'][0]
+        ret['verified'] = ret['md5Checksum'] == h.hexdigest()
+        return ret
+
     def upload_file(self, file_name, name, parent):
         stat = os.stat(file_name)
         attempt = 0
@@ -106,25 +128,15 @@ class GoogleDriveClient:
         while not result:
             seek = 0
             if attempt == 0:
-                existing = self.find_item(name, parent).json()
-                if len(existing['files']) > 0:
-                    self.logger.debug('File already exists.')
-                    h = md5()
-                    with open(file_name, 'rb') as f:
-                        while True:
-                            block = f.read(64 * 1024)
-                            if block:
-                                h.update(block)
-                            else:
-                                break
-                    if existing['files'][0]['md5Checksum'] == h.hexdigest():
-                        self.logger.debug('Checksums match.')
+                existing = self.verify_file(file_name, name, parent)
+                if existing:
+                    if existing['verified']:
+                        self.logger.debug(u'Verified {}'.format(file_name))
                         return
-                    self.logger.debug('Overwriting file.')
                     upload = self.request(
                         'PATCH',
                         'upload/drive/v3/files/{}'.format(
-                            existing['files'][0]['id']
+                            existing['id']
                         ),
                         params = {'uploadType': 'resumable' },
                         headers = {'X-Upload-Content-Length': str(stat.st_size)},

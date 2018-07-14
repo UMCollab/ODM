@@ -12,21 +12,57 @@ import sys
 
 from util import cli
 
-cli = cli.CLI(['path', 'user', '--dest'], 'google')
+cli = cli.CLI(['path', 'user', 'action', '--dest'], 'google')
 client = cli.client
 dir_map = {}
+retval = 0
 
 dest = cli.args.dest if cli.args.dest else 'Migrated from OneDrive'
-dir_map['.'] = client.create_folder(dest)
 
-for root, dirs, files in os.walk(cli.args.path):
-    parent = os.path.relpath(root, cli.args.path)
-    for dname in dirs:
-        relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
-        cli.logger.info(u'Creating folder {}...'.format(relpath))
-        dir_map[relpath] = client.create_folder(dname, dir_map[parent])
-    for fname in files:
-        fpath = '/'.join((root, fname))
-        relpath = os.path.relpath(fpath, cli.args.path)
-        cli.logger.info(u'Uploading {}...'.format(relpath))
-        client.upload_file(fpath, fname, dir_map[parent])
+if cli.args.action == 'upload-files':
+    dir_map['.'] = client.create_folder(dest)
+
+    for root, dirs, files in os.walk(cli.args.path):
+        parent = os.path.relpath(root, cli.args.path)
+        for dname in dirs:
+            relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
+            cli.logger.info(u'Creating folder {}'.format(relpath))
+            dir_map[relpath] = client.create_folder(dname, dir_map[parent])
+        for fname in files:
+            fpath = '/'.join((root, fname))
+            relpath = os.path.relpath(fpath, cli.args.path)
+            cli.logger.info(u'Uploading {}'.format(relpath))
+            client.upload_file(fpath, fname, dir_map[parent])
+
+elif cli.args.action == 'verify-files':
+    existing = client.find_folder(dest)
+    dir_map['.'] = existing['id'] if existing else None
+
+    for root, dirs, files in os.walk(cli.args.path):
+        parent = os.path.relpath(root, cli.args.path)
+        for dname in dirs:
+            relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
+            if dir_map[parent]:
+                existing = client.find_folder(dname, dir_map[parent])
+                dir_map[relpath] = existing['id'] if existing else None
+            else:
+                dir_map[relpath] = None
+        for fname in files:
+            fpath = '/'.join((root, fname))
+            relpath = os.path.relpath(fpath, cli.args.path)
+            if dir_map[parent]:
+                existing = client.verify_file(fpath, fname, dir_map[parent])
+                if existing and existing['verified']:
+                    cli.logger.info(u'Verified {}'.format(relpath))
+                else:
+                    cli.logger.warn(u'Failed to verify {}'.format(relpath))
+                    retval = 1
+            else:
+                cli.logger.warn(u'Cannot verify {}'.format(relpath))
+                retval = 1
+
+else:
+    print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+    retval = 1
+
+sys.exit(retval)
