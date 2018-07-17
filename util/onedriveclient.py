@@ -101,7 +101,8 @@ class OneDriveClient:
                 error = 'requests error'
 
             if page_result.status_code == 429:
-                delay = page_result.headers['retry-after']
+                if 'retry-after' in page_result.headers:
+                    delay = page_result.headers['retry-after']
                 error = 'Throttled'
             elif page_result.status_code == 504:
                 error = 'Gateway timeout'
