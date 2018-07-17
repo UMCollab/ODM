@@ -11,6 +11,8 @@ import sys
 
 import yaml
 
+from requests.exceptions import HTTPError
+
 from util import cli, quickxorhash
 
 cli = cli.CLI(['user', 'action'])
@@ -35,7 +37,11 @@ elif cli.args.action == 'list-items':
 
     drives = client.list_drives(cli.args.user)
     items = client.expand_items([drive['root'] for drive in drives])
-    notebooks = client.list_notebooks(cli.args.user)
+    # This consistently throws a 403 for some users
+    try:
+        notebooks = client.list_notebooks(cli.args.user)
+    except HTTPError:
+        notebooks = []
     print(json.dumps({ 'items': items, 'notebooks': notebooks }, indent = 2))
 
 else:
