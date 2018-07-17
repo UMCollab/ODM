@@ -70,7 +70,7 @@ class OneDriveClient:
         )
 
     def _get(self, path):
-        if self.token['expires_at'] > time.time():
+        if self.token['expires_at'] < time.time() + 300:
             self._get_token()
 
         if self.baseurl not in path:
