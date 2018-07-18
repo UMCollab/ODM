@@ -55,7 +55,9 @@ odm-list ezekielh.json list-filenames | grep ^testdir > ezekielh.exclude
 odm-list ezekielh.json download-estimate --exclude ezekielh.exclude
 odm-list ezekielh.json download-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude
 odm-list ezekielh.json verify-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude -v
-odm-list ezekielh.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
+
+odm-user ezekielh list-notebooks > ezekielh-onenote.json
+odm-list ezekielh-onenote.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
 ```
 
 Quick benchmarks:
