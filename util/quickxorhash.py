@@ -9,8 +9,24 @@ __metaclass__ = type
 import base64
 import struct
 
+from ctypes import cdll, c_char_p, c_void_p, c_ulonglong
+
 class QuickXORHash:
     def __init__(self):
+        try:
+            self.libqxh = cdll.LoadLibrary('libqxh.so.0')
+        except OSError:
+            self.HAS_LIBQXH = False
+        else:
+            self.HAS_LIBQXH = True
+            self.libqxh.qxh_new.restype = c_void_p
+            self.libqxh.qxh_update.argtypes = [c_void_p, c_char_p, c_ulonglong]
+            self.libqxh.qxh_finalize.argtypes = [c_void_p]
+            self.libqxh.qxh_finalize.restype = c_char_p
+            self.libqxh.qxh_free.argtypes = [c_void_p]
+            self.qxh = self.libqxh.qxh_new()
+            return
+
         # Constants
         self.width = 160
         self.shift = 11
@@ -21,6 +37,10 @@ class QuickXORHash:
         self.cell = [0] * (int((self.width - 1) / 64) + 1)
 
     def update(self, data):
+        if self.HAS_LIBQXH:
+            self.libqxh.qxh_update(self.qxh, str(data), len(data))
+            return
+
         cell_index = int(self.shifted / 64)
         cell_bitpos = int(self.shifted % 64)
 
@@ -55,6 +75,11 @@ class QuickXORHash:
         self.length += len(data)
 
     def finalize(self):
+        if self.HAS_LIBQXH:
+            digest = self.libqxh.qxh_finalize(self.qxh)
+            self.libqxh.qxh_free(self.qxh)
+            return digest
+
         # Convert cells to byte array
         b_data = bytearray()
         for i in range(0, len(self.cell)):
