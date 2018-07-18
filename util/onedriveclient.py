@@ -100,12 +100,13 @@ class OneDriveClient:
                 self.logger.warn(e)
                 error = 'requests error'
 
-            if page_result.status_code == 429:
-                if 'retry-after' in page_result.headers:
-                    delay = page_result.headers['retry-after']
-                error = 'Throttled'
-            elif page_result.status_code == 504:
-                error = 'Gateway timeout'
+            if page_result:
+                if page_result.status_code == 429:
+                    if 'retry-after' in page_result.headers:
+                        delay = page_result.headers['retry-after']
+                    error = 'Throttled'
+                elif page_result.status_code == 504:
+                    error = 'Gateway timeout'
 
             if error:
                 self.logger.warn('{}, sleeping for {} seconds'.format(error, delay))
