@@ -37,12 +37,15 @@ elif cli.args.action == 'list-items':
 
     drives = client.list_drives(cli.args.user)
     items = client.expand_items([drive['root'] for drive in drives])
+    print(json.dumps({ 'items': items }, indent = 2))
+
+elif cli.args.action == 'list-notebooks':
     # This consistently throws a 403 for some users
     try:
         notebooks = client.list_notebooks(cli.args.user)
     except HTTPError:
         notebooks = []
-    print(json.dumps({ 'items': items, 'notebooks': notebooks }, indent = 2))
+    print(json.dumps({ 'notebooks': notebooks }, indent = 2))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
