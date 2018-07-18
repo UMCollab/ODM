@@ -224,11 +224,7 @@ class OneDriveClient:
                             f.write(chunk)
                             if h is not None:
                                 h.update(bytearray(chunk))
-        except (
-            requests.exceptions.HTTPError,
-            requests.exceptions.ReadTimeout,
-            requests.exceptions.ConnectionError
-        ) as e:
+        except requests.exception.RequestException as e:
             self.logger.warn(e)
             return None
         if calculate_hash:
