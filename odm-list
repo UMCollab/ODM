@@ -115,7 +115,7 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
 
     if cli.args.action == 'download-estimate':
         delta_msg = 'estimated time {!s}'.format(
-            datetime.timedelta(seconds = int(count + (size / 15294809)))
+            datetime.timedelta(seconds = int(count + (size / 2097152)))
         )
     else:
         delta_msg = 'elapsed time {!s}'.format(datetime.datetime.now() - ts_start)

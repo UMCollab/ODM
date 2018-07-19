@@ -60,16 +60,8 @@ odm-user ezekielh list-notebooks > ezekielh-onenote.json
 odm-list ezekielh-onenote.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
 ```
 
-Quick benchmarks:
-* 0.68 seconds per file with negligibly tiny files
-* 51.3 GiB/hour for one large file
-
 ## Uploading to Google Drive
 ```
 gdm /var/tmp/ezekielh ezekielh upload-files --dest "Magically Delicious"
 gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
 ```
-
-Quick benchmarks:
-* 1.53 seconds per file with negligibly tiny files
-* 196.1 GiB/hour for one large file
