@@ -235,7 +235,11 @@ class OneDriveClient:
     def download_file(self, drive_id, file_id, dest):
         url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
 
-        return self._download(url['location'], dest, True)
+        if url:
+            return self._download(url['location'], dest, True)
+        else:
+            self.logger.warn('Failed to fetch download link from API')
+            return None
 
     def list_notebooks(self, user):
         notebooks = self.get('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))
