@@ -97,7 +97,8 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
                 if result is None:
                     cli.logger.warn(u'Failed to download {}'.format(dest))
                     retval = 1
-        elif cli.args.action == 'verify-items':
+
+        elif cli.args.action == 'verify-items' and digest:
             if client.verify_file(
                 dest,
                 item['size'],
@@ -107,6 +108,7 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
             else:
                 cli.logger.warn(u'Failed to verify {}'.format(dest))
                 retval = 1
+
         elif cli.args.action == 'list-filenames':
             print(item['fullpath'])
 
