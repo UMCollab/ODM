@@ -134,7 +134,7 @@ class OneDriveClient:
         return result
 
     def list_users(self):
-        users = self.get('users')
+        users = self.get('users?$select=id,displayName,givenName,jobTitle,mail,userPrincipalName,accountEnabled,onPremisesImmutableId,onPremisesSyncEnabled')
         if users:
             return users['value']
         return []
