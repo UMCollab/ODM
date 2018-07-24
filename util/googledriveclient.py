@@ -141,11 +141,12 @@ class GoogleDriveClient:
                         params = {'uploadType': 'resumable' },
                         headers = {'X-Upload-Content-Length': str(stat.st_size)},
                     )
-                else:
+                    path = upload.headers['location']
+                elif stat.st_size > 0:
                     upload = self.request(
                         'POST',
                         'upload/drive/v3/files',
-                        params = {'uploadType': 'resumable' },
+                        params = {'uploadType': 'resumable'},
                         headers = {
                             'X-Upload-Content-Length': str(stat.st_size)
                         },
@@ -154,8 +155,17 @@ class GoogleDriveClient:
                             'parents': [ parent ],
                         },
                     )
-                path = upload.headers['location']
-            else:
+                    path = upload.headers['location']
+                else:
+                    result = self.request(
+                        'POST',
+                        'drive/v3/files',
+                        json = {
+                            'name': name,
+                            'parents': [ parent ],
+                        },
+                    )
+            elif stat.st_size > 0:
                 result = self.request(
                     'PUT', path,
                     headers = {'Content-Range': '*/{}'.format(stat.st_size)}
