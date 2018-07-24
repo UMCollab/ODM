@@ -70,7 +70,7 @@ class GoogleDriveClient:
         return result
 
     def find_item(self, name, parent = None):
-        query = "name = '{}' and trashed = false".format(name)
+        query = "name = '{}' and trashed = false".format(name.replace("'", "\\'"))
         if parent:
             query = "{} and '{}' in parents".format(query, parent)
 
