@@ -15,7 +15,7 @@ from requests.exceptions import HTTPError
 
 from util import cli, quickxorhash
 
-cli = cli.CLI(['user', 'action'])
+cli = cli.CLI(['user', 'action', '--incremental'])
 client = cli.client
 
 if cli.args.action == 'show':
@@ -37,6 +37,10 @@ elif cli.args.action == 'list-items':
 
     drives = client.list_drives(cli.args.user)
     items = client.expand_items([drive['root'] for drive in drives])
+    if cli.args.incremental:
+        with open(cli.args.incremental, 'rb') as f:
+            old = json.load(f)['items']
+            items = [x for x in items if x not in old]
     print(json.dumps({ 'items': items }, indent = 2))
 
 elif cli.args.action == 'list-notebooks':
