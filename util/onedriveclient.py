@@ -178,14 +178,14 @@ class OneDriveClient:
 
         return items
 
-    def verify_file(self, dest, size, file_hash = None):
-        if size is None and file_hash is None:
-            self.logger.debug(u'No size or hash provided for {}'.format(dest))
-            return False
-
+    def verify_file(self, dest, size = None, file_hash = None, strict = True):
         if not os.path.exists(dest):
            self.logger.debug(u'{} does not exist'.format(dest))
            return False
+
+        if strict and size is None and file_hash is None:
+            self.logger.debug(u'No size or hash provided for {}'.format(dest))
+            return False
 
         if size is not None:
             stat = os.stat(dest)

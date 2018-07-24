@@ -19,7 +19,7 @@ writer = getwriter('utf8')
 sys.stdout = writer(sys.stdout)
 sys.stderr = writer(sys.stderr)
 
-cli = cli.CLI(['--dest', '--limit', '--exclude', '--start', 'file', 'action'])
+cli = cli.CLI(['--dest', '--limit', '--exclude', '--start', '--diff', 'file', 'action'])
 client = cli.client
 
 ts_start = datetime.datetime.now()
@@ -73,12 +73,18 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
         if 'hashes' in item['file']:
             digest = item['file']['hashes']['quickXorHash']
 
+        verify_args = {
+            'dest': dest,
+        }
+        if (not cli.args.diff) or ('size' in cli.args.diff.split(',')):
+            verify_args['size'] = item['size']
+        if (not cli.args.diff) or ('hash' in cli.args.diff.split(',')):
+            verify_args['file_hash'] = digest
+
+
         if cli.args.action == 'download-items':
-            if client.verify_file(
-                dest,
-                item['size'],
-                digest,
-            ):
+            verify_args['strict'] = False
+            if client.verify_file(**verify_args):
                 cli.logger.info(u'Verified {}'.format(dest))
             else:
                 cli.logger.info(u'Downloading {} to {}'.format(item['fullpath'], dest))
@@ -99,11 +105,7 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
                     retval = 1
 
         elif cli.args.action == 'verify-items' and digest:
-            if client.verify_file(
-                dest,
-                item['size'],
-                digest,
-            ):
+            if client.verify_file(**verify_args):
                 cli.logger.info(u'Verified {}'.format(dest))
             else:
                 cli.logger.warn(u'Failed to verify {}'.format(dest))
