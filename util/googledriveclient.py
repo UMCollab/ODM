@@ -131,7 +131,7 @@ class GoogleDriveClient:
                 existing = self.verify_file(file_name, name, parent)
                 if existing:
                     if existing['verified']:
-                        self.logger.debug(u'Verified {}'.format(file_name))
+                        self.logger.debug('Verified {}'.format(file_name))
                         return
                     upload = self.request(
                         'PATCH',

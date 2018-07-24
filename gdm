@@ -26,12 +26,12 @@ if cli.args.action == 'upload-files':
         parent = os.path.relpath(root, cli.args.path)
         for dname in dirs:
             relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
-            cli.logger.info(u'Creating folder {}'.format(relpath))
+            cli.logger.info('Creating folder {}'.format(relpath))
             dir_map[relpath] = client.create_folder(dname, dir_map[parent])
         for fname in files:
             fpath = '/'.join((root, fname))
             relpath = os.path.relpath(fpath, cli.args.path)
-            cli.logger.info(u'Uploading {}'.format(relpath))
+            cli.logger.info('Uploading {}'.format(relpath))
             client.upload_file(fpath, fname, dir_map[parent])
 
 elif cli.args.action == 'verify-files':
@@ -54,15 +54,15 @@ elif cli.args.action == 'verify-files':
                 existing = client.verify_file(fpath, fname, dir_map[parent])
                 if existing:
                     if existing['verified']:
-                        cli.logger.info(u'Verified {}'.format(relpath))
+                        cli.logger.info('Verified {}'.format(relpath))
                     else:
-                        cli.logger.warn(u'Failed to verify {}: digest mismatch'.format(relpath))
+                        cli.logger.warn('Failed to verify {}: digest mismatch'.format(relpath))
                         retval = 1
                 else:
-                    cli.logger.warn(u'Failed to verify {}: not found'.format(relpath))
+                    cli.logger.warn('Failed to verify {}: not found'.format(relpath))
                     retval = 1
             else:
-                cli.logger.warn(u'Failed to verify {}: parent folder does not exist'.format(relpath))
+                cli.logger.warn('Failed to verify {}: parent folder does not exist'.format(relpath))
                 retval = 1
 
 else:
