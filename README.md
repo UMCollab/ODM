@@ -71,9 +71,8 @@ gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
 
 * OneDrive filenames can be up to 400 characters in length, while most Unix
   filesystems only allow 255 bytes. If ODM encounters a filename or path
-  component that is more than 255 bytes, it keeps the filename as long as
-  possible and adds leading directory components containing the rest of the
-  original filename.
+  component that is more than 255 bytes it chunks the excess characters into
+  leading directory components.
 
 * OneNote files can be downloaded via the OneDrive API, but they do not have an
   associated hash and do not reliably report the actual download size via the

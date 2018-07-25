@@ -177,9 +177,7 @@ class OneDriveClient:
                             while len(tok.encode('utf-8')) > 255:
                                 item['mangled_path'] = True
                                 for i in range(0, len(tok)):
-                                    if len(tok[i:].encode('utf-8')) <= 255:
-                                        break
-                                    elif len(tok[:i].encode('utf-8')) > 255:
+                                    if len(tok[:i].encode('utf-8')) > 255:
                                         i -= 1
                                         break
                                 fullpath.append(tok[:i])
