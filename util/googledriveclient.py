@@ -13,6 +13,7 @@ import requests
 import sys
 import time
 
+from datetime import datetime
 from hashlib import md5
 
 import google.oauth2.service_account
@@ -123,58 +124,67 @@ class GoogleDriveClient:
     def upload_file(self, file_name, name, parent):
         stat = os.stat(file_name)
         attempt = 0
+        path = None
         result = None
+        mtime = datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z'
 
         while not result:
-            seek = 0
-            if attempt == 0:
-                existing = self.verify_file(file_name, name, parent)
-                if existing:
-                    if existing['verified']:
-                        self.logger.debug('Verified {}'.format(file_name))
-                        return
-                    upload = self.request(
-                        'PATCH',
-                        'upload/drive/v3/files/{}'.format(
-                            existing['id']
-                        ),
-                        params = {'uploadType': 'resumable' },
-                        headers = {'X-Upload-Content-Length': str(stat.st_size)},
-                    )
+            if stat.st_size == 0:
+                result = self.request(
+                    'POST',
+                    'drive/v3/files',
+                    json = {
+                        'name': name,
+                        'parents': [ parent ],
+                        'modifiedTime': mtime,
+                    },
+                )
+
+            else:
+                seek = 0
+                if attempt == 0:
+                    existing = self.verify_file(file_name, name, parent)
+                    if existing:
+                        if existing['verified']:
+                            self.logger.debug('Verified {}'.format(file_name))
+                            return
+                        upload = self.request(
+                            'PATCH',
+                            'upload/drive/v3/files/{}'.format(
+                                existing['id']
+                            ),
+                            params = {'uploadType': 'resumable' },
+                            headers = {'X-Upload-Content-Length': str(stat.st_size)},
+                            json = {
+                                'modifiedTime': mtime,
+                            }
+                        )
+                    else:
+                        upload = self.request(
+                            'POST',
+                            'upload/drive/v3/files',
+                            params = {'uploadType': 'resumable'},
+                            headers = {
+                                'X-Upload-Content-Length': str(stat.st_size)
+                            },
+                            json = {
+                                'name': name,
+                                'parents': [ parent ],
+                                'modifiedTime': mtime,
+                            },
+                        )
                     path = upload.headers['location']
-                elif stat.st_size > 0:
-                    upload = self.request(
-                        'POST',
-                        'upload/drive/v3/files',
-                        params = {'uploadType': 'resumable'},
-                        headers = {
-                            'X-Upload-Content-Length': str(stat.st_size)
-                        },
-                        json = {
-                            'name': name,
-                            'parents': [ parent ],
-                        },
-                    )
-                    path = upload.headers['location']
+
                 else:
                     result = self.request(
-                        'POST',
-                        'drive/v3/files',
-                        json = {
-                            'name': name,
-                            'parents': [ parent ],
-                        },
+                        'PUT', path,
+                        headers = {'Content-Range': '*/{}'.format(stat.st_size)}
                     )
-            elif stat.st_size > 0:
-                result = self.request(
-                    'PUT', path,
-                    headers = {'Content-Range': '*/{}'.format(stat.st_size)}
-                )
-                if result.status_code == 308:
-                    if 'range' in status.headers:
-                        seek = status.headers['range'].split('-')[1]
-                else:
-                    result.raise_for_status()
+                    if result.status_code == 308:
+                        if 'range' in status.headers:
+                            seek = status.headers['range'].split('-')[1]
+                    else:
+                        result.raise_for_status()
 
             attempt += 1
             if not result or result.status_code not in [200, 201]:
