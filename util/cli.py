@@ -19,7 +19,7 @@ class CLI:
         parser = argparse.ArgumentParser()
         parser.add_argument('-c', '--config',
             help = 'Config file location',
-            default = 'config.yaml',
+            default = '/etc/odm.yaml',
         )
         parser.add_argument('-v', '--verbose',
             help = 'Enable verbose output',
