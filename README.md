@@ -82,6 +82,9 @@ gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
   Once the file has been downloaded, the API will then return the correct
   hash.
 
+* Files detected as malware by OneDrive's scanning cannot be downloaded via
+  the API.
+
 * Microsoft use a non-standard fingerprinting method for files in OneDrive for
   Business. ODM includes an incredibly slow pure Python implementation of this
   algorithm so that file verification works out of the box, but if you are

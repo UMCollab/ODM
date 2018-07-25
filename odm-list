@@ -70,6 +70,10 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
                 cli.logger.debug(u'Skipping non-file {}'.format(item['fullpath']))
             continue
 
+        if 'malware' in item:
+            cli.logger.info(u'{} is tagged as malware and cannot be downloaded'.format(item['fullpath']))
+            continue
+
         cli.logger.debug(u'Working on {}'.format(item['fullpath']))
 
         dest = '/'.join([destdir, item['fullpath']])

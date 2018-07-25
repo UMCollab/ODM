@@ -151,7 +151,7 @@ class OneDriveClient:
         return []
 
     def list_folder(self, folder):
-        return self.get('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo'.format(folder['parentReference']['driveId'], folder['id']))['value']
+        return self.get('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware'.format(folder['parentReference']['driveId'], folder['id']))['value']
 
     def expand_items(self, items):
         expanded = True
