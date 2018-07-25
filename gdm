@@ -20,7 +20,10 @@ retval = 0
 dest = cli.args.dest if cli.args.dest else 'Migrated from OneDrive'
 
 if cli.args.action == 'upload-files':
-    dir_map['.'] = client.create_folder(dest)
+    parent = None
+    for tok in dest.split('/'):
+        parent = client.create_folder(tok, parent)
+    dir_map['.'] = parent
 
     for root, dirs, files in os.walk(cli.args.path):
         parent = os.path.relpath(root, cli.args.path)
