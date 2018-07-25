@@ -83,6 +83,13 @@ gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
   Once the file has been downloaded, the API will then return the correct
   hash.
 
+* Microsoft use a non-standard fingerprinting method for files in OneDrive for
+  Business. ODM includes an incredibly slow pure Python implementation of this
+  algorithm so that file verification works out of the box, but if you are
+  dealing with any significant amount of data fingerprint calculation can be
+  sped up quite a bit by installing
+  [libqxh](https://github.com/flowerysong/quickxorhash).
+
 ## Notes on OneNote exports
 
 * Here be drekavac.
