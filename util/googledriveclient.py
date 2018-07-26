@@ -55,8 +55,9 @@ class GoogleDriveClient:
         while not result:
             try:
                 result = self._request(verb, path, **kwargs)
-            except requests.exceptions.ReadTimeout:
-                self.logger.warn('Timed out...')
+            except requests.exceptions.RequestException as e:
+                self.logger.warn(e)
+                continue
 
             if result.status_code in [ 429, 500 ]:
                 result = None
@@ -190,23 +191,28 @@ class GoogleDriveClient:
             if not result or result.status_code not in [200, 201]:
                 with open(file_name, 'rb') as f:
                     f.seek(seek)
-                    result = self._request(
-                        'PUT', path,
-                        data = f,
-                        headers = {
-                            'Content-Range': 'bytes {}-{}/{}'.format(
-                                seek,
-                                stat.st_size - 1,
-                                stat.st_size,
-                            )
-                        },
-                    )
-            if result.status_code == 403 or result.status_code >= 500:
+                    try:
+                        result = self._request(
+                            'PUT', path,
+                            data = f,
+                            headers = {
+                                'Content-Range': 'bytes {}-{}/{}'.format(
+                                    seek,
+                                    stat.st_size - 1,
+                                    stat.st_size,
+                                )
+                            },
+                        )
+                    except requests.exceptions.RequestException as e:
+                        self.logger.warn(e)
+
+            if not result or result.status_code == 403 or result.status_code >= 500:
                 delay = random.uniform(0, min(300, 3 * 2 ** attempt))
-                self.logger.warn('HTTP {}, sleeping for {} seconds'.format(
-                    result.status_code,
-                    delay
-                ))
+                if result:
+                    self.logger.warn('HTTP {}, sleeping for {} seconds'.format(
+                        result.status_code,
+                        delay
+                    ))
                 time.sleep(delay)
                 result = None
             elif result.status_code == 308:
