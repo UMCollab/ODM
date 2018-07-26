@@ -130,12 +130,13 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
             print(item['fullpath'])
 
         elif cli.args.action == 'touch-files':
-            os.utime(dest, (
-                time.time(),
-                calendar.timegm(dateutil.parser.parse(
-                    item['fileSystemInfo']['lastModifiedDateTime']
-                ).timetuple())
-            ))
+            if os.path.exists(dest):
+                os.utime(dest, (
+                    time.time(),
+                    calendar.timegm(dateutil.parser.parse(
+                        item['fileSystemInfo']['lastModifiedDateTime']
+                    ).timetuple())
+                ))
 
         size += item['size']
         count += 1
