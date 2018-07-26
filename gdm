@@ -6,6 +6,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import datetime
 import json
 import os
 import sys
@@ -15,45 +16,44 @@ from util import cli
 cli = cli.CLI(['path', 'user', 'action', '--dest'], 'google')
 client = cli.client
 dir_map = {}
+
+ts_start = datetime.datetime.now()
 retval = 0
 
 dest = cli.args.dest if cli.args.dest else 'Migrated from OneDrive'
 
-if cli.args.action == 'upload-files':
+if cli.args.action in ('upload-files', 'verify-files'):
+    count = 0
+
     parent = None
     for tok in dest.split('/'):
-        parent = client.create_folder(tok, parent)
+        if cli.args.action == 'upload-files':
+            parent = client.create_folder(tok, parent)
+        else:
+            parent = client.find_folder(tok, parent)
+            parent = parent['id'] if parent else None
     dir_map['.'] = parent
 
     for root, dirs, files in os.walk(cli.args.path):
         parent = os.path.relpath(root, cli.args.path)
         for dname in dirs:
             relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
-            cli.logger.info('Creating folder {}'.format(relpath))
-            dir_map[relpath] = client.create_folder(dname, dir_map[parent])
-        for fname in files:
-            fpath = '/'.join((root, fname))
-            relpath = os.path.relpath(fpath, cli.args.path)
-            cli.logger.info('Uploading {}'.format(relpath))
-            client.upload_file(fpath, fname, dir_map[parent])
-
-elif cli.args.action == 'verify-files':
-    existing = client.find_folder(dest)
-    dir_map['.'] = existing['id'] if existing else None
-
-    for root, dirs, files in os.walk(cli.args.path):
-        parent = os.path.relpath(root, cli.args.path)
-        for dname in dirs:
-            relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
-            if dir_map[parent]:
+            if cli.args.action == 'upload-files':
+                cli.logger.info('Creating folder {}'.format(relpath))
+                dir_map[relpath] = client.create_folder(dname, dir_map[parent])
+            elif dir_map[parent]:
                 existing = client.find_folder(dname, dir_map[parent])
                 dir_map[relpath] = existing['id'] if existing else None
             else:
-                dir_map[relpath] = None
+                dir_map[relpath] = Non
         for fname in files:
+            count += 1
             fpath = '/'.join((root, fname))
             relpath = os.path.relpath(fpath, cli.args.path)
-            if dir_map[parent]:
+            if cli.args.action == 'upload-files':
+                cli.logger.info('Uploading {}'.format(relpath))
+                client.upload_file(fpath, fname, dir_map[parent])
+            elif dir_map[parent]:
                 existing = client.verify_file(fpath, fname, dir_map[parent])
                 if existing:
                     if existing['verified']:
@@ -67,6 +67,11 @@ elif cli.args.action == 'verify-files':
             else:
                 cli.logger.warn('Failed to verify {}: parent folder does not exist'.format(relpath))
                 retval = 1
+
+    cli.logger.info('{} items, elapsed time {}'.format(
+        count,
+        datetime.datetime.now() - ts_start,
+    ))
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
