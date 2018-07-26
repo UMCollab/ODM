@@ -213,7 +213,7 @@ class GoogleDriveClient:
                 # Incomplete
                 attempt = 1
                 result = None
-            elif result.status_code == 404:
+            elif result.status_code == 404 or result.status_code == 410:
                 # Expired upload attempt
                 attempt = 0
                 result = None
