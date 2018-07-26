@@ -153,6 +153,19 @@ elif cli.args.action in ('download-items', 'download-estimate', 'list-filenames'
         delta_msg
     ))
 
+elif cli.args.action == 'remove-files':
+    fullpaths = [x['fullpath'] for x in metadata['items']]
+    for root, dirs, files in os.walk(cli.args.dest):
+        relpath = os.path.relpath(root, cli.args.dest)
+        for fname in files:
+            relfpath = '/'.join([relpath, fname])
+            if relfpath[:2] == './':
+                relfpath = relfpath[2:]
+            if unicode(relfpath, 'utf-8') not in fullpaths:
+                cli.logger.info('Removing {}'.format(relfpath))
+                fpath = '/'.join([root, fname])
+                cli.logger.info('unlink {}'.format(fpath))
+
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
     sys.exit(1)
