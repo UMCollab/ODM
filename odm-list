@@ -163,9 +163,9 @@ elif cli.args.action == 'remove-files':
             if relfpath[:2] == './':
                 relfpath = relfpath[2:]
             if unicode(relfpath, 'utf-8') not in fullpaths:
-                cli.logger.info('Removing {}'.format(relfpath))
+                cli.logger.debug('Removing {}'.format(relfpath))
                 fpath = '/'.join([root, fname])
-                cli.logger.info('unlink {}'.format(fpath))
+                os.unlink(fpath)
 
 else:
     print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
