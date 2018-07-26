@@ -45,7 +45,7 @@ if cli.args.action in ('upload-files', 'verify-files'):
                 existing = client.find_folder(dname, dir_map[parent])
                 dir_map[relpath] = existing['id'] if existing else None
             else:
-                dir_map[relpath] = Non
+                dir_map[relpath] = None
         for fname in files:
             count += 1
             fpath = '/'.join((root, fname))
