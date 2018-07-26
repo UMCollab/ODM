@@ -49,25 +49,51 @@ The gdm tool requires credentials for an authorized Google service account.
 * Do the needful
 
 ## Downloading from OneDrive
+
+Individual operations are designed to be idempotent and cleanly
+resumable. Because fetching metadata for large drives is a very
+expensive operation (both in volume of API calls and time) it's done
+as a separate step, and the download operations use this cached
+metadata file instead of the live API.
+
+### Fetch metadata
+
 ```
 odm-user ezekielh list-items > ezekielh.json
-odm-list ezekielh.json list-filenames | grep ^testdir > ezekielh.exclude
-odm-list ezekielh.json download-estimate --exclude ezekielh.exclude
-odm-list ezekielh.json download-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude
-odm-list ezekielh.json verify-items --dest /var/tmp/ezekielh --exclude ezekielh.exclude -v
-odm-user ezekielh list-items --incremental ezekielh.json > ezekielh-incr.json
+```
 
+### Download items
+
+Downloaded files are verified as they're saved, but you can also re-check the
+state of previously downloaded files as a separate operation.
+
+```
+odm-list ezekielh.json download-items --dest /var/tmp/ezekielh
+odm-list ezekielh.json verify-items --dest /var/tmp/ezekielh
+
+```
+
+### Convert OneNote notebooks
+
+OneNote has a rudimentary API that allows some but not all note data to be
+extracted and converted to HTML documents.
+
+```
 odm-user ezekielh list-notebooks > ezekielh-onenote.json
 odm-list ezekielh-onenote.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
 ```
 
 ## Uploading to Google Drive
+
 ```
 gdm /var/tmp/ezekielh ezekielh upload-files --dest "Magically Delicious"
 gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
 ```
 
 ## Known Limitations
+
+* The modification time of individual files is preserved, but no attempt is made
+  to preserve the mtime of folders.
 
 * OneDrive filenames can be up to 400 characters in length, while most Unix
   filesystems only allow 255 bytes (which could be as few as 63 UTF-8
@@ -92,7 +118,7 @@ gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
   sped up quite a bit by installing
   [libqxh](https://github.com/flowerysong/quickxorhash).
 
-## Notes on OneNote exports
+## Further Information On OneNote Exports
 
 * Most of ODM's magic is like the wardrobe to Narnia. OneNote exports are more
   akin to the Lament Configuration.
