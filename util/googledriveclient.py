@@ -179,16 +179,17 @@ class GoogleDriveClient:
                 else:
                     result = self.request(
                         'PUT', path,
-                        headers = {'Content-Range': '*/{}'.format(stat.st_size)}
+                        headers = {'Content-Range': 'bytes */{}'.format(stat.st_size)}
                     )
                     if result.status_code == 308:
                         if 'range' in status.headers:
                             seek = status.headers['range'].split('-')[1]
+                        self.logger.debug('Resuming upload at byte {}'.format(seek))
                     else:
                         result.raise_for_status()
 
             attempt += 1
-            if not result or result.status_code not in [200, 201]:
+            if path and (not result or result.status_code not in [200, 201]):
                 with open(file_name, 'rb') as f:
                     f.seek(seek)
                     try:
