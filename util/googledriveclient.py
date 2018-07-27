@@ -93,6 +93,7 @@ class GoogleDriveClient:
         if existing:
             return existing['id']
 
+        self.logger.debug('Creating folder {} under {}'.format(name, parent))
         payload = {
             'name': name,
             'mimeType': 'application/vnd.google-apps.folder',

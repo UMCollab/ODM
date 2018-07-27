@@ -38,8 +38,8 @@ if cli.args.action in ('upload-files', 'verify-files'):
         parent = os.path.relpath(root, cli.args.path)
         for dname in dirs:
             relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
+            cli.logger.info('Working on folder {}'.format(relpath))
             if cli.args.action == 'upload-files':
-                cli.logger.info('Creating folder {}'.format(relpath))
                 dir_map[relpath] = client.create_folder(dname, dir_map[parent])
             elif dir_map[parent]:
                 existing = client.find_folder(dname, dir_map[parent])
@@ -50,8 +50,8 @@ if cli.args.action in ('upload-files', 'verify-files'):
             count += 1
             fpath = '/'.join((root, fname))
             relpath = os.path.relpath(fpath, cli.args.path)
+            cli.logger.info('Working on file {}'.format(relpath))
             if cli.args.action == 'upload-files':
-                cli.logger.info('Uploading {}'.format(relpath))
                 client.upload_file(fpath, fname, dir_map[parent])
             elif dir_map[parent]:
                 existing = client.verify_file(fpath, fname, dir_map[parent])
