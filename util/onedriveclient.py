@@ -100,7 +100,7 @@ class OneDriveClient:
                 self.logger.warn(e)
                 error = 'requests error'
 
-            if page_result:
+            if page_result is not None:
                 if page_result.status_code == 429:
                     if 'retry-after' in page_result.headers:
                         delay = page_result.headers['retry-after']
