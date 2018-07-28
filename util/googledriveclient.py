@@ -185,8 +185,8 @@ class GoogleDriveClient:
                         headers = {'Content-Range': 'bytes */{}'.format(stat.st_size)}
                     )
                     if result.status_code == 308:
-                        if 'range' in status.headers:
-                            seek = status.headers['range'].split('-')[1]
+                        if 'range' in result.headers:
+                            seek = result.headers['range'].split('-')[1]
                         self.logger.debug('Resuming upload at byte {}'.format(seek))
                     else:
                         result.raise_for_status()
