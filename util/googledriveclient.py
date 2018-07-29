@@ -61,7 +61,7 @@ class GoogleDriveClient:
 
             if result.status_code == 403 and attempt > 3:
                 result.raise_for_status()
-            if result.status_code in [ 403, 429, 500 ]:
+            if result.status_code in [403, 429, 500]:
                 result = None
                 attempt += 1
                 # Jittered backoff
@@ -84,24 +84,28 @@ class GoogleDriveClient:
         )
         return response
 
-    def find_folder(self, name, parent = None):
+    def find_file(self, name, parent = None):
         existing = self.find_item(name, parent).json()
         if len(existing['files']) > 0:
             return existing['files'][0]
         return None
 
-    def create_folder(self, name, parent = None):
-        existing = self.find_folder(name, parent)
+    def create_file(self, name, parent = None, folder = False, mtime = None):
+        existing = self.find_file(name, parent)
         if existing:
             return existing['id']
 
-        self.logger.debug('Creating folder {} under {}'.format(name, parent))
+        self.logger.debug('Creating {} under {}'.format(name, parent))
         payload = {
             'name': name,
-            'mimeType': 'application/vnd.google-apps.folder',
         }
+
+        if folder:
+            payload['mimeType'] = 'application/vnd.google-apps.folder'
         if parent:
             payload['parents'] = [ parent ]
+        if mtime:
+            payload['modifiedTime'] = mtime
 
         return self.request(
             'POST', 'drive/v3/files',
@@ -127,105 +131,106 @@ class GoogleDriveClient:
 
     def upload_file(self, file_name, name, parent):
         stat = os.stat(file_name)
+        seek = 0
         attempt = 0
         path = None
         result = None
         mtime = datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z'
 
+        if stat.st_size == 0:
+            # Metadata-only creation
+            self.create_file(name, parent, mtime = mtime)
+            return True
+
+        existing = self.verify_file(file_name, name, parent)
+        if existing:
+            if existing['verified']:
+                self.logger.debug('Verified {}'.format(file_name))
+                return True
+
+            upload = self.request(
+                'PATCH',
+                'upload/drive/v3/files/{}'.format(
+                    existing['id']
+                ),
+                params = {'uploadType': 'resumable' },
+                headers = {'X-Upload-Content-Length': str(stat.st_size)},
+                json = {
+                    'modifiedTime': mtime,
+                }
+            )
+        else:
+            upload = self.request(
+                'POST',
+                'upload/drive/v3/files',
+                params = {'uploadType': 'resumable'},
+                headers = {
+                    'X-Upload-Content-Length': str(stat.st_size)
+                },
+                json = {
+                    'name': name,
+                    'parents': [ parent ],
+                    'modifiedTime': mtime,
+                },
+            )
+        path = upload.headers['location']
+
+        self.logger.debug('Uploading {}'.format(file_name))
         while not result:
-            if stat.st_size == 0:
-                result = self.request(
-                    'POST',
-                    'drive/v3/files',
-                    json = {
-                        'name': name,
-                        'parents': [ parent ],
-                        'modifiedTime': mtime,
-                    },
-                )
-
-            else:
-                seek = 0
-                if attempt == 0:
-                    existing = self.verify_file(file_name, name, parent)
-                    if existing:
-                        if existing['verified']:
-                            self.logger.debug('Verified {}'.format(file_name))
-                            return
-                        upload = self.request(
-                            'PATCH',
-                            'upload/drive/v3/files/{}'.format(
-                                existing['id']
-                            ),
-                            params = {'uploadType': 'resumable' },
-                            headers = {'X-Upload-Content-Length': str(stat.st_size)},
-                            json = {
-                                'modifiedTime': mtime,
-                            }
-                        )
-                    else:
-                        upload = self.request(
-                            'POST',
-                            'upload/drive/v3/files',
-                            params = {'uploadType': 'resumable'},
-                            headers = {
-                                'X-Upload-Content-Length': str(stat.st_size)
-                            },
-                            json = {
-                                'name': name,
-                                'parents': [ parent ],
-                                'modifiedTime': mtime,
-                            },
-                        )
-                    path = upload.headers['location']
-
-                else:
+            if attempt > 0:
+                # Determine the status of the upload
+                try:
                     result = self.request(
                         'PUT', path,
                         headers = {'Content-Range': 'bytes */{}'.format(stat.st_size)}
                     )
-                    if result.status_code == 308:
+                except requests.exceptions.RequestException as e:
+                    self.logger.warn(e)
+                    return False
+                else:
+                    if result.status_code in [200, 201]:
+                        return True
+                    elif result.status_code == 308:
                         if 'range' in result.headers:
                             seek = result.headers['range'].split('-')[1]
                         self.logger.debug('Resuming upload at byte {}'.format(seek))
                     else:
-                        result.raise_for_status()
+                        self.logger.warn('Upload resumption failed, HTTP {}'.format(result.status_code))
+                        return False
 
             attempt += 1
-            if path and (not result or result.status_code not in [200, 201]):
-                with open(file_name, 'rb') as f:
-                    f.seek(seek)
-                    try:
-                        result = self._request(
-                            'PUT', path,
-                            data = f,
-                            headers = {
-                                'Content-Range': 'bytes {}-{}/{}'.format(
-                                    seek,
-                                    stat.st_size - 1,
-                                    stat.st_size,
-                                )
-                            },
-                        )
-                    except requests.exceptions.RequestException as e:
-                        self.logger.warn(e)
+            with open(file_name, 'rb') as f:
+                f.seek(seek)
+                try:
+                    result = self._request(
+                        'PUT', path,
+                        data = f,
+                        headers = {
+                            'Content-Range': 'bytes {}-{}/{}'.format(
+                                seek,
+                                stat.st_size - 1,
+                                stat.st_size,
+                            )
+                        },
+                    )
+                except requests.exceptions.RequestException as e:
+                    self.logger.warn(e)
 
-            if not result or result.status_code == 403 or result.status_code >= 500:
+            if result is None or result.status_code == 403 or result.status_code >= 500:
                 delay = random.uniform(0, min(300, 3 * 2 ** attempt))
                 if result:
-                    self.logger.warn('HTTP {}, sleeping for {} seconds'.format(
-                        result.status_code,
-                        delay
-                    ))
+                    msg = 'HTTP {}'.format(result.status_cod)
+                else:
+                    msg = 'Error'
+                self.logger.warn('{}, sleeping for {} seconds'.format( msg, delay))
                 time.sleep(delay)
                 result = None
             elif result.status_code == 308:
                 # Incomplete
-                attempt = 1
                 result = None
             elif result.status_code == 404 or result.status_code == 410:
                 # Expired upload attempt
-                attempt = 0
-                result = None
+                return False
             else:
                 result.raise_for_status()
+        return True

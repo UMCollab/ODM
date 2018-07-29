@@ -28,9 +28,9 @@ if cli.args.action in ('upload-files', 'verify-files'):
     parent = None
     for tok in dest.split('/'):
         if cli.args.action == 'upload-files':
-            parent = client.create_folder(tok, parent)
+            parent = client.create_file(tok, parent, folder = True)
         else:
-            parent = client.find_folder(tok, parent)
+            parent = client.find_file(tok, parent)
             parent = parent['id'] if parent else None
     dir_map['.'] = parent
 
@@ -40,9 +40,9 @@ if cli.args.action in ('upload-files', 'verify-files'):
             relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
             cli.logger.info('Working on folder {}'.format(relpath))
             if cli.args.action == 'upload-files':
-                dir_map[relpath] = client.create_folder(dname, dir_map[parent])
+                dir_map[relpath] = client.create_file(dname, dir_map[parent], folder = True)
             elif dir_map[parent]:
-                existing = client.find_folder(dname, dir_map[parent])
+                existing = client.find_file(dname, dir_map[parent])
                 dir_map[relpath] = existing['id'] if existing else None
             else:
                 dir_map[relpath] = None
@@ -52,7 +52,14 @@ if cli.args.action in ('upload-files', 'verify-files'):
             relpath = os.path.relpath(fpath, cli.args.path)
             cli.logger.info('Working on file {}'.format(relpath))
             if cli.args.action == 'upload-files':
-                client.upload_file(fpath, fname, dir_map[parent])
+                attempt = 0
+                result = False
+                while attempt < 3 and not result:
+                    attempt += 1
+                    result = client.upload_file(fpath, fname, dir_map[parent])
+                if not result:
+                    cli.logger.warn('Failed to upload {}'.format(relpath))
+                    retval = 1
             elif dir_map[parent]:
                 existing = client.verify_file(fpath, fname, dir_map[parent])
                 if existing:
