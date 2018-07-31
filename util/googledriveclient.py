@@ -219,7 +219,7 @@ class GoogleDriveClient:
             if result is None or result.status_code == 403 or result.status_code >= 500:
                 delay = random.uniform(0, min(300, 3 * 2 ** attempt))
                 if result:
-                    msg = 'HTTP {}'.format(result.status_cod)
+                    msg = 'HTTP {}'.format(result.status_code)
                 else:
                     msg = 'Error'
                 self.logger.warn('{}, sleeping for {} seconds'.format( msg, delay))
