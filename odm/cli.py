@@ -12,7 +12,9 @@ import sys
 
 import yaml
 
-from util import googledriveclient, onedriveclient
+from kitchen.text.converters import getwriter
+
+from odm import googledriveclient, onedriveclient
 
 class CLI:
     def __init__(self, args, client='microsoft'):
@@ -48,3 +50,9 @@ class CLI:
             self.client = googledriveclient.GoogleDriveClient(self.config, self.logger)
         elif client == 'microsoft':
             self.client = onedriveclient.OneDriveClient(self.config, self.logger)
+
+    @staticmethod
+    def writer_wrap(caller_sys):
+        writer = getwriter('utf8')
+        caller_sys.stdout = writer(caller_sys.stdout)
+        caller_sys.stderr = writer(caller_sys.stderr)

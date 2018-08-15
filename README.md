@@ -5,15 +5,13 @@ to a local directory tree without the involvement of the end user. It also
 includes a tool for administratively uploading a local directory tree to Google
 Drive.
 
-ODM is currently in beta. It has undergone some testing, but the codebase is
-still very new and in flux.
-
 ## Setting up your environment
 
 This tool was mainly written and tested using Python 2.7 on Linux. Portions of
 the code were also tested under various versions of Python >= 3.4.
 
-We recommend using a virtualenv to install ODM's Python dependencies.
+For development, we recommend using a virtualenv to install ODM's Python
+dependencies.
 
 * Run `init.sh` to set up the virtualenv
 * When you want to use ODM, source env-setup.sh (`. env-setup.sh`) to set up the
@@ -21,8 +19,8 @@ We recommend using a virtualenv to install ODM's Python dependencies.
 
 ## Credentials
 
-The odm tools require credentials for an authorized Azure AD 2.0 client.
-The gdm tool requires credentials for an authorized Google service account.
+The odm command requires credentials for an authorized Azure AD 2.0 client.
+The gdm command requires credentials for an authorized Google service account.
 
 ### Azure AD 2.0
 
@@ -46,7 +44,27 @@ The gdm tool requires credentials for an authorized Google service account.
 
 ### Google Service Account
 
-* Do the needful
+* Create a project at
+  https://console.developers.google.com/cloud-resource-manager
+* Inside the project, create a service account.
+    * Name the account something meaningful.
+    * The account does not require any roles.
+    * Select `Furnish a new private key` and the JSON key type.
+    * Enable `G Suite Domain Wide Delegation`
+    * Creating the account will download a JSON file; use this as the
+      `credentials` in your ODM config.
+* Inside the project, enable the Google Drive API.
+    * Open the navigation menu by clicking the three bars icon at the top left.
+    * Click `APIs & Services`
+    * Click `ENABLE APIS AND SERVICES`
+    * Find `Google Drive API`
+    * Click `ENABLE`
+* As a super-admin, authorize the scopes at https://admin.google.com/
+    * Click `Security`
+    * Click `Advanced settings`
+    * Click `Manage API client access`
+    * Enter the client ID and authorize it for
+      `https://www.googleapis.com/auth/drive`
 
 ## Downloading from OneDrive
 
@@ -59,19 +77,25 @@ metadata file instead of the live API.
 ### Fetch metadata
 
 ```
-odm-user ezekielh list-items > ezekielh.json
+odm user ezekielh show
+odm user ezekielh list-drives
+odm user ezekielh list-items > ezekielh.json
 ```
 
 ### Download items
 
 Downloaded files are verified as they're saved, but you can also re-check the
-state of previously downloaded files as a separate operation.
+state of previously downloaded files as a separate operation, or clean up
+an existing destination folder by deleting extraneous files.
 
 ```
-odm-list ezekielh.json download-items --dest /var/tmp/ezekielh
-odm-list ezekielh.json verify-items --dest /var/tmp/ezekielh
-
+odm list ezekielh.json list-filenames
+odm list ezekielh.json download-estimate
+odm list ezekielh.json download --dest /var/tmp/ezekielh
+odm list ezekielh.json verify --dest /var/tmp/ezekielh
+odm list ezekielh.json clean-filetree --dest /var/tmp/ezekielh
 ```
+
 
 ### Convert OneNote notebooks
 
@@ -79,15 +103,15 @@ OneNote has a rudimentary API that allows some but not all note data to be
 extracted and converted to HTML documents.
 
 ```
-odm-user ezekielh list-notebooks > ezekielh-onenote.json
-odm-list ezekielh-onenote.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
+odm user ezekielh list-notebooks > ezekielh-onenote.json
+odm list ezekielh-onenote.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
 ```
 
 ## Uploading to Google Drive
 
 ```
-gdm /var/tmp/ezekielh ezekielh upload-files --dest "Magically Delicious"
-gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
+gdm filetree /var/tmp/ezekielh upload ezekielh --dest "Magically Delicious"
+gdm filetree /var/tmp/ezekielh verify ezekielh --dest "Magically Delicious"
 ```
 
 ## Known Limitations
@@ -117,6 +141,12 @@ gdm /var/tmp/ezekielh ezekielh verify-files --dest "Magically Delicious"
   dealing with any significant amount of data fingerprint calculation can be
   sped up quite a bit by installing
   [libqxh](https://github.com/flowerysong/quickxorhash).
+
+## Migration Tooling
+
+ODM is fairly well tested at this point, having been used at the University of
+Michigan to do a one-time migration of ~6000 users with a total of 5 TiB of
+data. An example migration script can be found in the contrib directory.
 
 ## Further Information On OneNote Exports
 

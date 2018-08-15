@@ -22,7 +22,7 @@ import requests_toolbelt
 from bs4 import BeautifulSoup
 from oauthlib.oauth2 import BackendApplicationClient
 
-from util import inkml, quickxorhash
+from odm import inkml, quickxorhash
 
 KETSUBAN = '''
 iVBORw0KGgoAAAANSUhEUgAAAMkAAADhCAYAAABiOZFeAAAFVElEQVR42u3dvW1bMRSAUffuvGNG
