@@ -9,7 +9,6 @@ __metaclass__ = type
 import os
 import random
 import requests
-import sys
 import time
 
 from datetime import datetime
