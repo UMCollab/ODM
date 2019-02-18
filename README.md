@@ -33,9 +33,14 @@ The gdm command requires credentials for an authorized Google service account.
       not useful in any way, but it can't be omitted)
     * Under `Microsoft Graph Permissions` add the necessary `Application
       Permissions`:
-        * User.Read.All
-        * Files.Read.All
-        * Notes.Read.All
+        * Minimal set:
+            * User.Read.All
+            * Files.Read.All
+            * Notes.Read.All
+        * Full functionality:
+            * User.Read.All
+            * Files.ReadWrite.All
+            * Notes.Read.All
 * Grant permissions for your tenant by visiting
   https://login.microsoftonline.com/common/adminconsent?client_id=FOO&redirect_uri=https://localhost
   while logged in as an admin.

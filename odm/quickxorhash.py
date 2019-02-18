@@ -7,18 +7,22 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import base64
+import logging
 import struct
 
 from ctypes import cdll, c_char_p, c_void_p, c_ulonglong
 
 class QuickXORHash:
     def __init__(self):
+        logger = logging.getLogger(__name__)
         try:
             self.libqxh = cdll.LoadLibrary('libqxh.so.0')
         except OSError:
             self.HAS_LIBQXH = False
+            logger.debug('Using pure Python for hash calculation')
         else:
             self.HAS_LIBQXH = True
+            logger.debug('Using libqxh for hash calculation')
             self.libqxh.qxh_new.restype = c_void_p
             self.libqxh.qxh_update.argtypes = [c_void_p, c_char_p, c_ulonglong]
             self.libqxh.qxh_finalize.argtypes = [c_void_p]

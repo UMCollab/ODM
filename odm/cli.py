@@ -37,19 +37,22 @@ class CLI:
 
         self.config['args'] = self.args
 
-        self.logger = logging.getLogger(__name__)
+        # Configure root logger
+        logger = logging.getLogger()
         handler = logging.StreamHandler(sys.stderr)
-        handler.setFormatter(logging.Formatter('%(asctime)s %(message)s', '%Y-%m-%dT%H:%M:%S'))
+        handler.setFormatter(logging.Formatter('%(asctime)s %(name)s: %(message)s', '%Y-%m-%dT%H:%M:%S'))
         if self.args.verbose:
-            self.logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
         else:
-            self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+
+        self.logger = logging.getLogger(__name__)
 
         if client == 'google':
-            self.client = googledriveclient.GoogleDriveClient(self.config, self.logger)
+            self.client = googledriveclient.GoogleDriveClient(self.config)
         elif client == 'microsoft':
-            self.client = onedriveclient.OneDriveClient(self.config, self.logger)
+            self.client = onedriveclient.OneDriveClient(self.config)
 
     @staticmethod
     def writer_wrap(caller_sys):

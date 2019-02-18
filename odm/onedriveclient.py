@@ -8,19 +8,19 @@ __metaclass__ = type
 
 import base64
 import json
+import logging
 import os
-import random
 import re
+import sys
 import time
 
-import requests
-import requests_oauthlib
 import requests_toolbelt
 
 from bs4 import BeautifulSoup
-from oauthlib.oauth2 import BackendApplicationClient
 
-from odm import inkml, quickxorhash
+from odm import onedrivesession, inkml, quickxorhash
+from odm.util import ChunkyFile
+
 
 KETSUBAN = '''
 iVBORw0KGgoAAAANSUhEUgAAAMkAAADhCAYAAABiOZFeAAAFVElEQVR42u3dvW1bMRSAUffuvGNG
@@ -51,66 +51,18 @@ JEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSjuo/MassmDD1NGYAAAAASUVORK5CYII=
 '''
 
 class OneDriveClient:
-    def __init__(self, config, logger):
+    def __init__(self, config):
         self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.config = config
-        self.logger = logger
-        client = BackendApplicationClient(client_id = config['microsoft']['client_id'])
-        self.msgraph = requests_oauthlib.OAuth2Session(client = client)
-        self._get_token()
+        self.logger = logging.getLogger(__name__)
+        self.msgraph = onedrivesession.OneDriveSession(self.config.get('domain'), self.config['microsoft'])
 
-    def _get_token(self):
-        self.token = self.msgraph.fetch_token(
-            token_url = 'https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.config.get('domain')),
-            client_id = self.config['microsoft']['client_id'],
-            client_secret = self.config['microsoft']['client_secret'],
-            scope = [ 'https://graph.microsoft.com/.default' ],
-        )
-
-    def _get(self, path):
-        if self.token['expires_at'] < time.time() + 300:
-            self._get_token()
-
-        if self.baseurl not in path:
-            path = ''.join([self.baseurl, path])
-
-        return self.msgraph.get(
-            path,
-            timeout = self.config.get('timeout', 60),
-            allow_redirects = False,
-        )
-
-    def get(self, path):
+    def get_list(self, path):
         result = None
         page_result = None
-        attempt = 0
 
         while not page_result:
-            attempt += 1
-            error = None
-            delay = random.uniform(0, min(300, 3 * 2 ** attempt))
-            try:
-                page_result = self._get(path)
-            except (
-                requests.exceptions.ReadTimeout,
-                requests.exceptions.ConnectionError,
-            ) as e:
-                self.logger.warn(e)
-                error = 'requests error'
-
-            if page_result is not None:
-                if page_result.status_code == 429:
-                    if 'retry-after' in page_result.headers:
-                        delay = page_result.headers['retry-after']
-                    error = 'Throttled'
-                elif page_result.status_code == 504:
-                    error = 'Gateway timeout'
-
-            if error:
-                self.logger.warn('{}, sleeping for {} seconds'.format(error, delay))
-                time.sleep(delay)
-                page_result = None
-                continue
+            page_result = self.msgraph.get(path)
 
             if page_result.status_code == 302:
                 return { 'location': page_result.headers['location'] }
@@ -118,7 +70,7 @@ class OneDriveClient:
                 return None
             else:
                 page_result.raise_for_status()
-                decoded = json.loads(page_result.content)
+                decoded = page_result.json()
                 if result:
                     result['value'].extend(decoded['value'])
                 else:
@@ -127,29 +79,47 @@ class OneDriveClient:
                     self.logger.debug('Getting next page...')
                     path = decoded['@odata.nextLink']
                     page_result = None
-                    attempt = 0
 
         return result
 
     def list_users(self):
-        users = self.get('users?$select=id,displayName,givenName,jobTitle,mail,userPrincipalName,accountEnabled,onPremisesImmutableId,onPremisesSyncEnabled')
+        users = self.get_list('users?$select=id,displayName,givenName,jobTitle,mail,userPrincipalName,accountEnabled,onPremisesImmutableId,onPremisesSyncEnabled')
         if users:
             return users['value']
         return []
 
     def show_user(self, user):
-        return self.get('/users/{}@{}'.format(user, self.config['domain']))
+        return self.get_list('users/{}@{}'.format(user, self.config['domain']))
 
     def list_drives(self, user):
-        drives = self.get('users/{}@{}/drives'.format(user, self.config['domain']))
+        drives = self.get_list('users/{}@{}/drives'.format(user, self.config['domain']))
         if drives:
             for d in drives['value']:
-                d['root'] = self.get('drives/{}/root'.format(d['id']))
+                d['root'] = self.get_list('drives/{}/root'.format(d['id']))
             return drives['value']
         return []
 
+    def create_folder(self, drive_id, parent, name):
+        children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
+        for child in children:
+            if child['name'] == name:
+                return child
+
+        payload = {
+            'name': name,
+            'folder': {},
+            '@microsoft.graph.conflictBehavior': 'fail',
+        }
+
+        return self.msgraph.post('drives/{}/items/{}/children'.format(drive_id, parent), json=payload).json()
+
     def list_folder(self, folder):
-        return self.get('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware'.format(folder['parentReference']['driveId'], folder['id']))['value']
+        ret = self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,permissions,remoteItem,size,fileSystemInfo,malware'.format(folder['parentReference']['driveId'], folder['id']))['value']
+        for item in ret:
+            # The API doesn't support retrieving the permissions while listing
+            # folder contents, so we get to make even more API calls.
+            item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(folder['parentReference']['driveId'], item['id'])).json())
+        return ret
 
     def expand_items(self, items):
         expanded = True
@@ -242,7 +212,7 @@ class OneDriveClient:
         return True
 
     def download_file(self, drive_id, file_id, dest):
-        url = self.get('drives/{}/items/{}/content'.format(drive_id, file_id))
+        url = self.get_list('drives/{}/items/{}/content'.format(drive_id, file_id))
 
         if url:
             return self._download(url['location'], dest, True)
@@ -250,12 +220,74 @@ class OneDriveClient:
             self.logger.warn('Failed to fetch download link from API')
             return None
 
+    def upload_file(self, file_name, drive_id, parent):
+        # 10 megabytes
+        chunk_size = 1024 * 1024 * 1024 * 10
+
+        self.logger.debug(u'uploading {}'.format(file_name))
+        stat = os.stat(file_name)
+
+        fname = os.path.basename(file_name)
+
+        #Check for existing, matching file
+
+        if stat.st_size == 0:
+            result = self.msgraph.put('drives/{}/items/{}:/{}:/content'.format(drive_id, parent, fname), data='')
+            print(result.json())
+            result.raise_for_status()
+            return
+
+        payload = {
+            'item': {
+                '@microsoft.graph.conflictBehavior': 'replace',
+                'name': fname,
+            },
+        }
+
+        upload = self.msgraph.post(u'drives/{}/items/{}:/{}:/createUploadSession'.format(drive_id, parent, fname), json=payload).json()
+        upload_url = upload['uploadUrl']
+
+        start = 0
+        result = None
+
+        while not result:
+            remaining = stat.st_size - start
+            if remaining > chunk_size:
+                end = start + chunk_size
+                size = chunk_size
+            else:
+                end = stat.st_size - 1
+                size = stat.st_size - start
+
+            self.logger.debug('uploading bytes {}-{}/{}'.format(start, end, stat.st_size))
+
+            data = ChunkyFile(file_name, start, size)
+            result = self.msgraph.put(
+                upload_url,
+                data = data,
+                headers = {
+                    'Content-Length': str(size),
+                    'Content-Range': 'bytes {}-{}/{}'.format(start, end, stat.st_size),
+                },
+            )
+            print(result.json())
+            if result.status_code == 404:
+                self.logger.info('Invalid upload session')
+                # FIXME: retry
+                return None
+            result.raise_for_status()
+            if result.status_code == 202:
+                start = result.json()['nextExpectedRanges'][0].split('-')[0]
+                result = None
+
+        return result
+
     def list_notebooks(self, user):
-        notebooks = self.get('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))
+        notebooks = self.get_list('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))
         if notebooks:
             for n in notebooks['value']:
                 for s in n['sections']:
-                    s['pages'] = self.get(s['pagesUrl'])['value']
+                    s['pages'] = self.get_list(s['pagesUrl'])['value']
             return notebooks['value']
         return []
 

@@ -19,7 +19,7 @@ import odm.cli
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['--dest', '--limit', '--exclude', '--start', '--diff', 'file', 'action'])
+    cli = odm.cli.CLI(['--dest', '--upload-dest', '--limit', '--exclude', '--start', '--diff', 'file', 'action'])
     client = cli.client
 
     ts_start = datetime.datetime.now()
@@ -34,11 +34,34 @@ def main():
         for book in metadata['notebooks']:
             client.convert_notebook(book, destdir)
 
-    elif cli.args.action in ('download', 'download-estimate', 'list-filenames', 'verify'):
+    elif cli.args.action in ('download', 'download-estimate', 'list-filenames', 'verify', 'upload'):
         exclude = []
         if cli.args.exclude:
             with open(cli.args.exclude, 'rb') as f:
                 exclude = [e.rstrip() for e in list(f)]
+
+        if cli.args.action == 'upload':
+            if not cli.args.upload_dest:
+                print('No upload destination specified.', file = sys.stderr)
+                sys.exit(1)
+
+            upload_dest = cli.args.upload_dest.split('/', 1)
+            upload_path = None
+            for d in client.list_drives(upload_dest[0]):
+                if d['name'] == 'OneDrive':
+                    upload_drive = d['id']
+                    upload_path = d['root']['id']
+
+            if not upload_path:
+                print('Unable to find destination OneDrive for {}'.format(upload_dest[0]), file = sys.stderr)
+                sys.exit(1)
+
+            if len(upload_dest) == 2:
+                for tok in upload_dest[1].split('/'):
+                    ret = client.create_folder(upload_drive, upload_path, tok)
+                    print(json.dumps(ret))
+                    upload_path = ret['id']
+            id_map = {}
 
         size = 0
         count = 0
@@ -64,6 +87,22 @@ def main():
             if 'file' not in item:
                 if 'folder' not in item and 'package' not in item:
                     cli.logger.debug(u'Skipping non-file {}'.format(item['fullpath']))
+                # FIXME: package?
+                if cli.args.action == 'upload':
+                    if 'folder' in item:
+                        cli.logger.debug(u'Mapping folder {} / {}'.format(item['name'], item['id']))
+                        if 'id' not in item['parentReference']:
+                            id_map[item['id']] = upload_path
+                        elif id_map[item['parentReference']['id']] == 'package':
+                            id_map[item['id']] = 'package'
+                        else:
+                            id_map[item['id']] = client.create_folder(
+                                upload_drive,
+                                id_map[item['parentReference']['id']],
+                                item['name'],
+                            )['id']
+                    else:
+                        id_map[item['id']] = 'package'
                 continue
 
             if 'malware' in item:
@@ -121,6 +160,11 @@ def main():
                 else:
                     cli.logger.warn(u'Failed to verify {}'.format(dest))
                     retval = 1
+
+            elif cli.args.action == 'upload':
+                parent = id_map[item['parentReference']['id']]
+                if parent != 'package':
+                    client.upload_file(dest, upload_drive, parent)
 
             elif cli.args.action == 'list-filenames':
                 print(item['fullpath'])

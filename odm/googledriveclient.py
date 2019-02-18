@@ -6,6 +6,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import logging
 import os
 import random
 import requests
@@ -21,7 +22,7 @@ class GoogleDriveClient:
     def __init__(self, config, logger):
         self.baseurl = 'https://www.googleapis.com/'
         self.config = config
-        self.logger = logger
+        self.logger = logging.getLogger(__name__)
 
         cred_kwargs = {
             'subject': '{}@{}'.format(config['args'].user, config['domain']),
