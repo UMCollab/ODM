@@ -35,6 +35,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
 		token_url = 'https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.domain),
 		client_id = self.ms_config['client_id'],
 		client_secret = self.ms_config['client_secret'],
+                include_client_id = True,
 		scope = [ 'https://graph.microsoft.com/.default' ],
 	)
 
