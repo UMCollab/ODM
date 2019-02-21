@@ -164,7 +164,7 @@ def main():
             elif cli.args.action == 'upload':
                 parent = id_map[item['parentReference']['id']]
                 if parent != 'package':
-                    client.upload_file(dest, upload_drive, parent)
+                    client.upload_file(dest, upload_drive, parent, item['name'])
 
             elif cli.args.action == 'list-filenames':
                 print(item['fullpath'])

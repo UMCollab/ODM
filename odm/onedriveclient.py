@@ -220,20 +220,19 @@ class OneDriveClient:
             self.logger.warn('Failed to fetch download link from API')
             return None
 
-    def upload_file(self, file_name, drive_id, parent):
+    def upload_file(self, src, drive_id, parent, fname):
         # 10 megabytes
         chunk_size = 1024 * 1024 * 1024 * 10
 
-        self.logger.debug(u'uploading {}'.format(file_name))
-        stat = os.stat(file_name)
-
-        fname = os.path.basename(file_name)
+        self.logger.debug(u'uploading {}'.format(src))
+        stat = os.stat(src)
 
         #Check for existing, matching file
 
-        if stat.st_size == 0:
-            result = self.msgraph.put('drives/{}/items/{}:/{}:/content'.format(drive_id, parent, fname), data='')
-            print(result.json())
+        # The documentation says 4 MB; they might actually mean MiB but eh.
+        if stat.st_size < 4 * 1000 * 1000:
+            with open(src, 'rb') as f:
+                result = self.msgraph.put(u'drives/{}/items/{}:/{}:/content'.format(drive_id, parent, fname), data=f)
             result.raise_for_status()
             return
 
@@ -261,7 +260,7 @@ class OneDriveClient:
 
             self.logger.debug('uploading bytes {}-{}/{}'.format(start, end, stat.st_size))
 
-            data = ChunkyFile(file_name, start, size)
+            data = ChunkyFile(src, start, size)
             result = self.msgraph.put(
                 upload_url,
                 data = data,
@@ -270,7 +269,6 @@ class OneDriveClient:
                     'Content-Range': 'bytes {}-{}/{}'.format(start, end, stat.st_size),
                 },
             )
-            print(result.json())
             if result.status_code == 404:
                 self.logger.info('Invalid upload session')
                 # FIXME: retry
