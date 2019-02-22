@@ -234,7 +234,7 @@ class OneDriveClient:
             with open(src, 'rb') as f:
                 result = self.msgraph.put(u'drives/{}/items/{}:/{}:/content'.format(drive_id, parent, fname), data=f)
             result.raise_for_status()
-            return
+            return result.json()
 
         payload = {
             'item': {
@@ -278,7 +278,7 @@ class OneDriveClient:
                 start = result.json()['nextExpectedRanges'][0].split('-')[0]
                 result = None
 
-        return result
+        return result.json()
 
     def list_notebooks(self, user):
         notebooks = self.get_list('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))

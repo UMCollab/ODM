@@ -59,7 +59,6 @@ def main():
             if len(upload_dest) == 2:
                 for tok in upload_dest[1].split('/'):
                     ret = client.create_folder(upload_drive, upload_path, tok)
-                    print(json.dumps(ret))
                     upload_path = ret['id']
             id_map = {}
 
