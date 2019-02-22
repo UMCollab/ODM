@@ -36,7 +36,7 @@ def main():
             sys.exit(1)
 
         drives = client.list_drives(cli.args.user)
-        items = client.expand_items([drive['root'] for drive in drives])
+        items = client.expand_items([drive['root'] for drive in drives if drive['name'] == 'OneDrive'])
         if cli.args.incremental:
             with open(cli.args.incremental, 'rb') as f:
                 old = json.load(f)['items']
