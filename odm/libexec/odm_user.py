@@ -21,7 +21,7 @@ def main():
     if cli.args.action == 'show':
         user = client.show_user(cli.args.user)
         if user:
-            print(json.dumps(client.show_user(cli.args.user), indent = 2))
+            print(json.dumps(user, indent = 2))
         else:
             print('User {} not found'.format(cli.args.user), file = sys.stderr)
             sys.exit(1)
