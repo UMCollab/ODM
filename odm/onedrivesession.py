@@ -27,6 +27,8 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
         super(OneDriveSession, self).__init__(**kwargs)
         # This is just so OAuth2Session.request() will call refresh_token()
         self.auto_refresh_url = 'placeholder'
+        # This is just so OAuth2Session.request() won't raise TokenUpdated
+        self.token_updater = lambda x: None
         self._fresh_token()
 
     def _fresh_token(self):
