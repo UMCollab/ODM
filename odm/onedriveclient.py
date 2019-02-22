@@ -99,6 +99,15 @@ class OneDriveClient:
             return drives['value']
         return []
 
+    def show_site(self, site):
+        ret = self.msgraph.get('sites/{}?expand=sites,drives,lists'.format(site)).json()
+        for d in ret['drives']:
+            d['root'] = self.msgraph.get('drives/{}/root'.format(d['id'])).json()
+        return ret
+
+    def list_sites(self):
+        return self.get_list('sites?search=')['value']
+
     def create_folder(self, drive_id, parent, name):
         children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
         for child in children:
