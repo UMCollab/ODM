@@ -55,7 +55,7 @@ class OneDriveClient:
         self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.config = config
         self.logger = logging.getLogger(__name__)
-        self.msgraph = onedrivesession.OneDriveSession(self.config.get('domain'), self.config['microsoft'])
+        self.msgraph = onedrivesession.OneDriveSession(self.config.get('domain'), self.config['microsoft'], self.config.get('timeout', 60))
 
     def get_list(self, path):
         result = None

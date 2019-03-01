@@ -17,11 +17,12 @@ from oauthlib.oauth2 import BackendApplicationClient
 
 
 class OneDriveSession(requests_oauthlib.OAuth2Session):
-    def __init__(self, domain, ms_config, **kwargs):
+    def __init__(self, domain, ms_config, timeout, **kwargs):
 	self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.logger = logging.getLogger(__name__)
         self.domain = domain
         self.ms_config = ms_config
+        self.timeout = timeout
         client = BackendApplicationClient(client_id = ms_config['client_id'])
         kwargs['client'] = client
         super(OneDriveSession, self).__init__(**kwargs)
@@ -47,6 +48,9 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
     def request(self, method, url, **kwargs):
         if not url.lower().startswith('http'):
             url = ''.join([self.baseurl, url])
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
 
         attempt = 0
         while attempt < 5:
