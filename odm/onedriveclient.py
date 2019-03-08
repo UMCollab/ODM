@@ -62,7 +62,7 @@ class OneDriveClient:
         page_result = None
 
         while not page_result:
-            page_result = self.msgraph.get(path)
+            page_result = self.msgraph.get(path, allow_redirects = False)
 
             if page_result.status_code == 302:
                 return { 'location': page_result.headers['location'] }
