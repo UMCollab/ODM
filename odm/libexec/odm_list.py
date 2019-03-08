@@ -109,6 +109,8 @@ def main():
                 continue
 
             cli.logger.debug(u'Working on {}'.format(item['fullpath']))
+            size += item['size']
+            count += 1
 
             dest = '/'.join([destdir, item['fullpath']])
             digest = None
