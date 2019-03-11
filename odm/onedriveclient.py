@@ -122,12 +122,12 @@ class OneDriveClient:
 
         return self.msgraph.post('drives/{}/items/{}/children'.format(drive_id, parent), json=payload).json()
 
-    def list_folder(self, folder):
-        ret = self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,permissions,remoteItem,size,fileSystemInfo,malware'.format(folder['parentReference']['driveId'], folder['id']))['value']
+    def list_folder(self, drive_id, folder):
+        ret = self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,permissions,remoteItem,size,fileSystemInfo,malware'.format(drive_id, folder))['value']
         for item in ret:
             # The API doesn't support retrieving the permissions while listing
             # folder contents, so we get to make even more API calls.
-            item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(folder['parentReference']['driveId'], item['id'])).json())
+            item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(drive_id, item['id'])).json())
         return ret
 
     def expand_items(self, items):
@@ -136,7 +136,7 @@ class OneDriveClient:
             expanded = False
             for item in items:
                 if ('folder' in item or 'package' in item) and 'expanded' not in item:
-                    items.extend(self.list_folder(item))
+                    items.extend(self.list_folder(item['parentReference']['driveId'], item['id']))
                     item['expanded'] = True
                     expanded = True
                 if 'fullpath' not in item:
@@ -229,6 +229,26 @@ class OneDriveClient:
             self.logger.warn('Failed to fetch download link from API')
             return None
 
+
+    def verify_upload(self, src, drive_id, parent, fname):
+        result = self.list_folder(drive_id, parent)
+        match = None
+        for item in result:
+            if item['name'] == fname:
+                match = item
+                break
+
+        if not match:
+            return None
+
+        h = quickxorhash.QuickXORHash()
+        fhash = h.hash_file(src)
+        if fhash == match['file']['hashes']['quickXorHash']:
+            self.logger.info(u'Verified uploaded {}'.format(src))
+            return match
+
+        return None
+
     def upload_file(self, src, drive_id, parent, fname):
         # 10 megabytes
         chunk_size = 1024 * 1024 * 1024 * 10
@@ -237,6 +257,9 @@ class OneDriveClient:
         stat = os.stat(src)
 
         #Check for existing, matching file
+        existing = self.verify_upload(src, drive_id, parent, fname)
+        if existing:
+            return existing
 
         # The documentation says 4 MB; they might actually mean MiB but eh.
         if stat.st_size < 4 * 1000 * 1000:

@@ -166,6 +166,8 @@ def main():
                 parent = id_map[item['parentReference']['id']]
                 if parent != 'package':
                     client.upload_file(dest, upload_drive, parent, item['name'])
+                else:
+                    cli.logger.info(u'Skipping packaged {}'.format(item['fullpath']))
 
             elif cli.args.action == 'list-filenames':
                 print(item['fullpath'])
