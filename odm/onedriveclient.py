@@ -14,6 +14,7 @@ import re
 import sys
 import time
 
+import requests
 import requests_toolbelt
 
 from bs4 import BeautifulSoup
