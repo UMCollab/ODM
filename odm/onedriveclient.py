@@ -284,9 +284,15 @@ class OneDriveClient:
         if not match:
             return None
 
-        # FIXME: do size comparison?
+        stat = os.stat(src)
+        if stat.st_size != match['size']:
+            return None
+
+        self.logger.info(u'Verified size of uploaded {}'.format(src))
+
         if 'hashes' not in match['file']:
-            return True
+            # Probably a OneNote file.
+            return match
 
         h = quickxorhash.QuickXORHash()
         fhash = h.hash_file(src)
