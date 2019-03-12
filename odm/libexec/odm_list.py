@@ -92,8 +92,6 @@ def main():
                         cli.logger.debug(u'Mapping folder {} / {}'.format(item['name'], item['id']))
                         if 'id' not in item['parentReference']:
                             id_map[item['id']] = upload_path
-                        elif id_map[item['parentReference']['id']] == 'package':
-                            id_map[item['id']] = 'package'
                         else:
                             id_map[item['id']] = client.create_folder(
                                 upload_drive,
@@ -101,7 +99,12 @@ def main():
                                 item['name'],
                             )['id']
                     else:
-                        id_map[item['id']] = 'package'
+                        id_map[item['id']] = client.create_notebook(
+                            upload_dest[0],
+                            upload_drive,
+                            id_map[item['parentReference']['id']],
+                            item['name'],
+                        )['id']
                 continue
 
             if 'malware' in item:
@@ -164,10 +167,7 @@ def main():
 
             elif cli.args.action == 'upload':
                 parent = id_map[item['parentReference']['id']]
-                if parent != 'package':
-                    client.upload_file(dest, upload_drive, parent, item['name'])
-                else:
-                    cli.logger.info(u'Skipping packaged {}'.format(item['fullpath']))
+                client.upload_file(dest, upload_drive, parent, item['name'])
 
             elif cli.args.action == 'list-filenames':
                 print(item['fullpath'])

@@ -123,12 +123,50 @@ class OneDriveClient:
 
         return self.msgraph.post('drives/{}/items/{}/children'.format(drive_id, parent), json=payload).json()
 
-    def list_folder(self, drive_id, folder):
+    def create_notebook(self, user, drive_id, parent, name):
+        children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
+        for child in children:
+            if child['name'] == name:
+                return child
+
+        payload = {
+            'displayName': name,
+        }
+        result = self.msgraph.post(
+            'users/{}@{}/onenote/notebooks'.format(user, self.config['domain']),
+            json = payload,
+        ).json()
+
+        self.logger.info(result)
+
+        payload = {
+            'parentReference': {
+                'id': parent,
+            }
+        }
+
+        result = None
+
+        # Find the OneDrive ID. I hate this.
+        notebooks = self.get_list('drives/{}/root:/Notebooks:/children?select=id,name'.format(drive_id))['value']
+        for item in notebooks:
+            if item['name'] == name:
+                result = self.msgraph.patch(
+                    'drives/{}/items/{}'.format(drive_id, item['id']),
+                    json = payload,
+                ).json()
+
+                self.logger.info(result)
+
+        return result
+
+    def list_folder(self, drive_id, folder, include_permissions = True):
         ret = self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,permissions,remoteItem,size,fileSystemInfo,malware'.format(drive_id, folder))['value']
-        for item in ret:
-            # The API doesn't support retrieving the permissions while listing
-            # folder contents, so we get to make even more API calls.
-            item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(drive_id, item['id'])).json())
+        if include_permissions:
+            for item in ret:
+                # The API doesn't support retrieving the permissions while
+                # listing folder contents, so we get to make even more calls.
+                item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(drive_id, item['id'])).json())
         return ret
 
     def expand_items(self, items):
@@ -232,7 +270,11 @@ class OneDriveClient:
 
 
     def verify_upload(self, src, drive_id, parent, fname):
-        result = self.list_folder(drive_id, parent)
+        result = self.list_folder(
+            drive_id,
+            parent,
+            include_permissions = False,
+        )
         match = None
         for item in result:
             if item['name'] == fname:
@@ -241,6 +283,10 @@ class OneDriveClient:
 
         if not match:
             return None
+
+        # FIXME: do size comparison?
+        if 'hashes' not in match['file']:
+            return True
 
         h = quickxorhash.QuickXORHash()
         fhash = h.hash_file(src)
