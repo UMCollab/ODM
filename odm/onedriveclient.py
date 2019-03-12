@@ -304,7 +304,7 @@ class OneDriveClient:
 
     def upload_file(self, src, drive_id, parent, fname):
         # 10 megabytes
-        chunk_size = 1024 * 1024 * 1024 * 10
+        chunk_size = 1024 * 1024 * 10
 
         self.logger.debug(u'uploading {}'.format(src))
         stat = os.stat(src)
@@ -337,7 +337,7 @@ class OneDriveClient:
         while not result:
             remaining = stat.st_size - start
             if remaining > chunk_size:
-                end = start + chunk_size
+                end = start + chunk_size - 1
                 size = chunk_size
             else:
                 end = stat.st_size - 1
@@ -360,7 +360,7 @@ class OneDriveClient:
                 return None
             result.raise_for_status()
             if result.status_code == 202:
-                start = result.json()['nextExpectedRanges'][0].split('-')[0]
+                start = int(result.json()['nextExpectedRanges'][0].split('-')[0])
                 result = None
 
         return result.json()
