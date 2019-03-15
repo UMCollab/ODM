@@ -83,28 +83,41 @@ def main():
                     cli.logger.debug(u'Skipping non-matching item {}'.format(item['fullpath']))
                     continue
 
+            if cli.args.action == 'upload' and 'id' in item['parentReference'] and item['parentReference']['id'] not in id_map:
+                cli.logger.warn(u'Unknown parent, skipping item {}'.format(item['fullpath']))
+                continue
+
             if 'file' not in item:
                 if 'folder' not in item and 'package' not in item:
                     cli.logger.debug(u'Skipping non-file {}'.format(item['fullpath']))
-                # FIXME: package?
                 if cli.args.action == 'upload':
                     if 'folder' in item:
                         cli.logger.debug(u'Mapping folder {} / {}'.format(item['name'], item['id']))
                         if 'id' not in item['parentReference']:
                             id_map[item['id']] = upload_path
                         else:
-                            id_map[item['id']] = client.create_folder(
+                            result = client.create_folder(
                                 upload_drive,
                                 id_map[item['parentReference']['id']],
                                 item['name'],
-                            )['id']
+                            )
+                            if result:
+                                id_map[item['id']] = result['id']
+                            else:
+                                cli.logger.error(u'Failed to create folder for {}'.format(item['fullpath']))
+                                retval = 1
                     else:
-                        id_map[item['id']] = client.create_notebook(
+                        result = client.create_notebook(
                             upload_dest[0],
                             upload_drive,
                             id_map[item['parentReference']['id']],
                             item['name'],
-                        )['id']
+                        )
+                        if result:
+                            id_map[item['id']] = result['id']
+                        else:
+                            cli.logger.error(u'Failed to create notebook for {}'.format(item['fullpath']))
+                            retval = 1
                 continue
 
             if 'malware' in item:

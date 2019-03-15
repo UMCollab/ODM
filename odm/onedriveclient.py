@@ -10,7 +10,9 @@ import base64
 import json
 import logging
 import os
+import random
 import re
+import string
 import sys
 import time
 
@@ -113,6 +115,9 @@ class OneDriveClient:
         children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
         for child in children:
             if child['name'] == name:
+                if 'folder' not in child:
+                    self.logger.notice(u'{} already exists but is not a folder'.format(name))
+                    return None
                 return child
 
         payload = {
@@ -121,28 +126,37 @@ class OneDriveClient:
             '@microsoft.graph.conflictBehavior': 'fail',
         }
 
-        return self.msgraph.post('drives/{}/items/{}/children'.format(drive_id, parent), json=payload).json()
+        result = self.msgraph.post('drives/{}/items/{}/children'.format(drive_id, parent), json=payload)
+
+        result.raise_for_status()
+        return result.json()
 
     def create_notebook(self, user, drive_id, parent, name):
         children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
         for child in children:
             if child['name'] == name:
+                if 'package' not in child or child['package']['type'] != 'oneNote':
+                    self.logger.notice(u'{} already exists but is not a OneNote package'.format(name))
+                    return None
                 return child
 
+        # Avoid name collisions within the fixed target folder
+        tmp_name = 'odmtmp_' + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
+
         payload = {
-            'displayName': name,
+            'displayName': tmp_name,
         }
         result = self.msgraph.post(
             'users/{}@{}/onenote/notebooks'.format(user, self.config['domain']),
             json = payload,
-        ).json()
-
-        self.logger.info(result)
+        )
+        result.raise_for_status()
 
         payload = {
             'parentReference': {
                 'id': parent,
-            }
+            },
+            'name': name,
         }
 
         result = None
@@ -150,15 +164,17 @@ class OneDriveClient:
         # Find the OneDrive ID. I hate this.
         notebooks = self.get_list('drives/{}/root:/Notebooks:/children?select=id,name'.format(drive_id))['value']
         for item in notebooks:
-            if item['name'] == name:
+            if item['name'] == tmp_name:
                 result = self.msgraph.patch(
                     'drives/{}/items/{}'.format(drive_id, item['id']),
                     json = payload,
-                ).json()
+                )
+                result.raise_for_status()
 
-                self.logger.info(result)
+        if result:
+            return result.json()
 
-        return result
+        return None
 
     def list_folder(self, drive_id, folder, include_permissions = True):
         ret = self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,permissions,remoteItem,size,fileSystemInfo,malware'.format(drive_id, folder))['value']
