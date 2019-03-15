@@ -73,6 +73,6 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
 
             if attempt < 5:
                 self.logger.info('Sleeping for {} seconds before retrying'.format(delay))
-                time.sleep(delay)
+                time.sleep(float(delay))
 
         raise(requests.exceptions.RetryError('maximum retries exceeded'))
