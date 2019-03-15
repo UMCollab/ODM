@@ -53,7 +53,9 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
             kwargs['timeout'] = self.timeout
 
         attempt = 0
-        while attempt < 5:
+        # FIXME: this should probably be configurable
+        max_attempts = 20
+        while attempt < max_attempts:
             attempt += 1
             delay = random.uniform(0, min(300, 3 * 2 ** attempt))
             try:
@@ -71,7 +73,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
                 elif result.status_code != 504:
                     return result
 
-            if attempt < 5:
+            if attempt < max_attempts:
                 self.logger.info('Sleeping for {} seconds before retrying'.format(delay))
                 time.sleep(float(delay))
 
