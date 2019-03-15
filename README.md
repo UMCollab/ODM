@@ -116,8 +116,8 @@ gdm filetree /var/tmp/ezekielh verify ezekielh --dest "Magically Delicious"
 
 ## Known Limitations
 
-* The modification time of individual files is preserved, but no attempt is made
-  to preserve the mtime of folders.
+* The modification time of individual files is preserved wherever possible, but
+  no attempt is made to preserve the mtime of folders.
 
 * OneDrive filenames can be up to 400 characters in length, while most Unix
   filesystems only allow 255 bytes (which could be as few as 63 UTF-8
