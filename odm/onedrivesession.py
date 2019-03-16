@@ -57,7 +57,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
         max_attempts = 20
         while attempt < max_attempts:
             attempt += 1
-            delay = random.uniform(0, min(300, 3 * 2 ** attempt))
+            delay = random.uniform(min(30, 2 ** attempt), min(300, 3 * 2 ** attempt))
             try:
                 result = super(OneDriveSession, self).request(method, url, **kwargs)
             except(
