@@ -24,23 +24,20 @@ The gdm command requires credentials for an authorized Google service account.
 
 ### Azure AD 2.0
 
+* Register your client at https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+
 * Register your client at https://apps.dev.microsoft.com/ (Azure AD 2.0 clients
   are also called "Converged applications").
-    * Under `Application Secrets` select `Generate New Password`; use this as
+    * Under `Certificates & secrets` select `New client secret`; use this as
       the `client_secret` in your ODM config.
-    * Under `Platforms`, add a web platform with a redirect URL of
-      `https://localhost` (with the authentication flow we're using this URL is
-      not useful in any way, but it can't be omitted)
-    * Under `Microsoft Graph Permissions` add the necessary `Application
-      Permissions`:
+    * Under `API Permissions` add the necessary application
+      permissions for Microsoft Graph:
         * User.Read.All
         * Files.ReadWrite.All
         * Notes.ReadWrite.All
-* Grant permissions for your tenant by visiting
-  https://login.microsoftonline.com/common/adminconsent?client_id=FOO&redirect_uri=https://localhost
-  while logged in as an admin.
-    * FOO should be replaced with the client ID that you registered
-    * If this step is successful you should be redirected to https://localhost/?admin_consent=True&tenant=BAR, which will probably fail to load.
+        * Sites.FullControl.All
+    * Grant admin consent for your tenant by clicking on the button.
+    * FIXME: should we document getting admin consent for other domains?
 
 ### Google Service Account
 
