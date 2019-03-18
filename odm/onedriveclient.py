@@ -176,24 +176,18 @@ class OneDriveClient:
 
         return None
 
-    def list_folder(self, drive_id, folder, include_permissions = True):
-        ret = self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,permissions,remoteItem,size,fileSystemInfo,malware'.format(drive_id, folder))['value']
-        if include_permissions:
-            for item in ret:
-                # The API doesn't support retrieving the permissions while
-                # listing folder contents, so we get to make even more calls.
-                item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(drive_id, item['id'])).json())
-        return ret
+    def list_folder(self, drive_id, folder):
+        return self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware,lastModifiedDateTime'.format(drive_id, folder))['value']
 
-    def expand_items(self, items):
+    def expand_items(self, items, incremental = None):
+        if incremental:
+            items = [item for item in items if item['lastModifiedDateTime'] > incremental]
+
         expanded = True
         while expanded:
             expanded = False
+            bad_items = []
             for item in items:
-                if ('folder' in item or 'package' in item) and 'expanded' not in item:
-                    items.extend(self.list_folder(item['parentReference']['driveId'], item['id']))
-                    item['expanded'] = True
-                    expanded = True
                 if 'fullpath' not in item:
                     if 'path' in item['parentReference']:
                         parent = re.sub(
@@ -218,6 +212,26 @@ class OneDriveClient:
                         item['fullpath'] = '/'.join(fullpath)
                     else:
                         item['fullpath'] = '/'
+
+                if 'folder' in item or 'package' in item:
+                    if 'expanded' not in item:
+                        items.extend(self.list_folder(item['parentReference']['driveId'], item['id']))
+                        item['expanded'] = True
+                        expanded = True
+                elif incremental and item['lastModifiedDateTime'] <= incremental:
+                    # We can't modify `items` while we're iterating over it,
+                    # so we'll maintain a list of items to remove.
+                    bad_items.append(item)
+                    self.logger.debug(u'{} is older than incremental timestamp {}, pruning'.format(item['fullpath'], incremental))
+                    continue
+
+                if 'permissions' not in item:
+                    # The API doesn't support retrieving the permissions while
+                    # listing folder contents, so we get to make even more calls.
+                    item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])).json())
+
+            for item in bad_items:
+                items.remove(item)
 
         return items
 
@@ -289,7 +303,6 @@ class OneDriveClient:
         result = self.list_folder(
             drive_id,
             parent,
-            include_permissions = False,
         )
         match = None
         for item in result:

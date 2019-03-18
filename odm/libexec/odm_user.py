@@ -36,11 +36,8 @@ def main():
             sys.exit(1)
 
         drives = client.list_drives(cli.args.user)
-        items = client.expand_items([drive['root'] for drive in drives if drive['name'] == 'OneDrive'])
-        if cli.args.incremental:
-            with open(cli.args.incremental, 'rb') as f:
-                old = json.load(f)['items']
-                items = [x for x in items if x not in old]
+
+        items = client.expand_items([drive['root'] for drive in drives if drive['name'] == 'OneDrive'], cli.args.incremental)
         print(json.dumps({ 'items': items }, indent = 2))
 
     elif cli.args.action == 'list-notebooks':
