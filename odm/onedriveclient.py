@@ -269,7 +269,7 @@ class OneDriveClient:
             h = quickxorhash.QuickXORHash()
 
         try:
-            with self.msgraph.get(url, stream = True) as r:
+            with self.msgraph.get(url, stream = True, timeout = self.config.get('timeout', 60) * 20) as r:
                 r.raise_for_status()
                 if r.headers['content-type'].startswith('multipart/'):
                     decoder = requests_toolbelt.MultipartDecoder.from_response(r)
