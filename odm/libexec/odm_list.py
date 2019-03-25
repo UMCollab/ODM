@@ -43,7 +43,7 @@ def main():
         if cli.args.action == 'upload':
             upload_user = cli.args.upload_user
             if not upload_user:
-                print('No upload user specified.', file = sys.stderr)
+                cli.logger.critical(u'No upload user specified.')
                 sys.exit(1)
 
             upload_path = None
@@ -53,7 +53,7 @@ def main():
                     upload_path = d['root']['id']
 
             if not upload_path:
-                print('Unable to find destination OneDrive for {}'.format(upload_dest[0]), file = sys.stderr)
+                cli.logger.critical(u'Unable to find destination OneDrive for %s', upload_user)
                 sys.exit(1)
 
             if cli.args.upload_path:
@@ -72,18 +72,18 @@ def main():
             item_path = client.expand_path(item_id, metadata['items'])
 
             if item_path in exclude:
-                cli.logger.debug(u'Skipping excluded item {}'.format(item_path))
+                cli.logger.debug(u'Skipping excluded item %s', item_path)
                 continue
 
             if cli.args.limit:
                 if not item_path.startswith(cli.args.limit):
-                    cli.logger.debug(u'Skipping non-matching item {}'.format(item_path))
+                    cli.logger.debug(u'Skipping non-matching item %s', item_path)
                     continue
 
-            cli.logger.debug(u'Working on {}'.format(item_path))
+            cli.logger.debug(u'Working on %s', item_path)
 
             if 'malware' in item:
-                cli.logger.info(u'{} is tagged as malware and cannot be processed'.format(item_path))
+                cli.logger.info(u'%s is tagged as malware and cannot be processed', item_path)
                 continue
 
             size += item['size']
@@ -106,9 +106,9 @@ def main():
             if cli.args.action == 'download':
                 verify_args['strict'] = False
                 if client.verify_file(**verify_args):
-                    cli.logger.info(u'Verified {}'.format(dest))
+                    cli.logger.info(u'Verified %s', dest)
                 else:
-                    cli.logger.info(u'Downloading {} to {}'.format(item_path, dest))
+                    cli.logger.info(u'Downloading %s to %s', item_path, dest)
                     attempt = 0
                     result = None
                     while attempt < 3 and result is None:
@@ -119,10 +119,10 @@ def main():
                             dest,
                         )
                         if digest and result != digest:
-                            cli.logger.info(u'{} has the wrong hash, retrying'.format(dest))
+                            cli.logger.info(u'%s has the wrong hash, retrying', dest)
                             result = None
                     if result is None:
-                        cli.logger.warn(u'Failed to download {}'.format(dest))
+                        cli.logger.warning(u'Failed to download %s', dest)
                         retval = 1
                     else:
                         os.utime(dest, (
@@ -134,9 +134,9 @@ def main():
 
             elif cli.args.action == 'verify' and digest:
                 if client.verify_file(**verify_args):
-                    cli.logger.info(u'Verified {}'.format(dest))
+                    cli.logger.info(u'Verified %s', dest)
                 else:
-                    cli.logger.warn(u'Failed to verify {}'.format(dest))
+                    cli.logger.warning(u'Failed to verify %s', dest)
                     retval = 1
 
             elif cli.args.action == 'upload':
@@ -155,13 +155,13 @@ def main():
                     step_path = client.expand_path(step['id'], metadata['items'])
                     parent = metadata['items'][step['parentReference']['id']]
                     if parent['upload_id'] == 'skip':
-                        cli.logger.debug(u'Skipping descendant {}'.format(step_path))
+                        cli.logger.debug(u'Skipping descendant %s', step_path)
                         step['upload_id'] = 'skip'
                         continue
 
                     if 'package' in step:
                         if step['package']['type'] != 'oneNote':
-                            cli.logger.info(u'Skipping unknown package {} ({})'.format(step_path, step['package']['type']))
+                            cli.logger.info(u'Skipping %s, unknown package type %s', step_path, step['package']['type'])
                             step['upload_id'] = 'skip'
                             continue
 
@@ -175,7 +175,7 @@ def main():
                             step['upload_id'] = result['id']
                         else:
                             step['upload_id'] = 'skip'
-                            cli.logger.error(u'Failed to create notebook {}'.format(step_path))
+                            cli.logger.error(u'Failed to create notebook %s', step_path)
                             retval = 1
 
                     elif 'folder' in step:
@@ -188,14 +188,14 @@ def main():
                             step['upload_id'] = result['id']
                         else:
                             step['upload_id'] = 'skip'
-                            cli.logger.error(u'Failed to create folder {}'.format(step_path))
+                            cli.logger.error(u'Failed to create folder %s', step_path)
                     else:
                         result = client.upload_file(dest, upload_drive, parent['upload_id'], step['name'])
                         if result:
                             step['upload_id'] = result['id']
                         else:
                             step['upload_id'] = 'failed'
-                            cli.logger.error(u'Failed to upload {}'.format(step_path))
+                            cli.logger.error(u'Failed to upload %s', step_path)
 
             elif cli.args.action == 'list-filenames':
                 print(item_path)
@@ -207,11 +207,7 @@ def main():
         else:
             delta_msg = 'elapsed time {!s}'.format(datetime.datetime.now() - ts_start)
 
-        cli.logger.info('{:.2f} MiB across {} items, {}'.format(
-            size / (1024 ** 2),
-            count,
-            delta_msg
-        ))
+        cli.logger.info(u'%.2f MiB across %d items, %s', size / (1024 ** 2), count, delta_msg)
 
     elif cli.args.action == 'clean-filetree':
         fullpaths = [client.expand_path(x, metadata['items'], True) for x in metadata['items'] if 'file' in metadata['items'][x]]
@@ -222,12 +218,12 @@ def main():
                 if relfpath[:2] == './':
                     relfpath = relfpath[2:]
                 if unicode(relfpath, 'utf-8') not in fullpaths:
-                    cli.logger.debug('Removing {}'.format(relfpath))
+                    cli.logger.info(u'Removing %s', relfpath)
                     fpath = '/'.join([root, fname])
                     os.unlink(fpath)
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        cli.logger.critical(u'Unsupported action %s', cli.args.action)
         sys.exit(1)
 
     sys.exit(retval)

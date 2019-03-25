@@ -116,7 +116,7 @@ class OneDriveClient:
         for child in children:
             if child['name'] == name:
                 if 'folder' not in child:
-                    self.logger.notice(u'{} already exists but is not a folder'.format(name))
+                    self.logger.warning(u'{} already exists but is not a folder'.format(name))
                     return None
                 return child
 
@@ -136,7 +136,7 @@ class OneDriveClient:
         for child in children:
             if child['name'] == name:
                 if 'package' not in child or child['package']['type'] != 'oneNote':
-                    self.logger.notice(u'{} already exists but is not a OneNote package'.format(name))
+                    self.logger.warning(u'{} already exists but is not a OneNote package'.format(name))
                     return None
                 return child
 
@@ -234,7 +234,7 @@ class OneDriveClient:
 
     def verify_file(self, dest, size = None, file_hash = None, strict = True):
         if not os.path.exists(dest):
-            self.logger.debug(u'{} does not exist'.format(dest))
+            self.logger.info(u'{} does not exist'.format(dest))
             return False
 
         if strict and size is None and file_hash is None:
@@ -244,14 +244,14 @@ class OneDriveClient:
         if size is not None:
             stat = os.stat(dest)
             if stat.st_size != size:
-                self.logger.debug(u'{} is the wrong size: expected {}, got {}'.format(dest, size, stat.st_size))
+                self.logger.info(u'{} is the wrong size: expected {}, got {}'.format(dest, size, stat.st_size))
                 return False
 
         if file_hash:
             h = quickxorhash.QuickXORHash()
             real_hash = h.hash_file(dest)
             if real_hash != file_hash:
-                self.logger.debug(u'{} has the wrong hash: expected {}, got {}'.format(dest, file_hash, real_hash))
+                self.logger.info(u'{} has the wrong hash: expected {}, got {}'.format(dest, file_hash, real_hash))
                 return False
 
         return True
@@ -280,7 +280,7 @@ class OneDriveClient:
                             if h is not None:
                                 h.update(bytearray(chunk))
         except requests.exceptions.RequestException as e:
-            self.logger.warn(e)
+            self.logger.warning(e)
             return None
         if calculate_hash:
             return h.finalize()
@@ -292,7 +292,7 @@ class OneDriveClient:
         if url:
             return self._download(url['location'], dest, True)
         else:
-            self.logger.warn('Failed to fetch download link from API')
+            self.logger.error('Failed to fetch download link from API')
             return None
 
 
@@ -447,7 +447,7 @@ class OneDriveClient:
                     div.append(img)
 
         if unexported:
-            self.logger.warn(u'{} contained unexportable data'.format(dest))
+            self.logger.warning(u'{} contained unexportable data'.format(dest))
             with open(dest + '/data/ketsuban.png', 'wb') as f:
                 f.write(base64.b64decode(KETSUBAN))
 

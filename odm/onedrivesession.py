@@ -64,7 +64,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
                 requests.exceptions.ReadTimeout,
                 requests.exceptions.ConnectionError,
             ) as e:
-                self.logger.debug(u'requests error: {}'.format(str(e)))
+                self.logger.info(u'Retryable requests error', exc_info=e)
             else:
                 if result.status_code == 429:
                     self.logger.debug('throttled')

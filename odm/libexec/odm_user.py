@@ -23,7 +23,7 @@ def main():
         if user:
             print(json.dumps(user, indent = 2))
         else:
-            print('User {} not found'.format(cli.args.user), file = sys.stderr)
+            cli.logger.critical(u'User %s not found', cli.args.user)
             sys.exit(1)
 
     elif cli.args.action == 'list-drives':
@@ -32,7 +32,7 @@ def main():
 
     elif cli.args.action == 'list-items':
         if not client.show_user(cli.args.user):
-            print('User {} not found'.format(cli.args.user), file = sys.stderr)
+            cli.logger.critical(u'User %s not found', cli.args.user)
             sys.exit(1)
 
         drives = client.list_drives(cli.args.user)
@@ -60,7 +60,7 @@ def main():
         print(json.dumps({ 'notebooks': notebooks }, indent = 2))
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        cli.logger.critical(u'Unsupported action %s', cli.args.action)
         sys.exit(1)
 
 if __name__ == '__main__':

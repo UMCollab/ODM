@@ -65,7 +65,7 @@ def main():
                         attempt += 1
                         result = client.upload_file(fpath, drive, dir_map[parent], fname)
                     if not result:
-                        cli.logger.warn('Failed to upload {}'.format(relpath))
+                        cli.logger.warning('Failed to upload {}'.format(relpath))
                         retval = 1
                 elif dir_map[parent]:
                     existing = client.verify_file(fpath, fname, dir_map[parent])
@@ -73,13 +73,13 @@ def main():
                         if existing['verified']:
                             cli.logger.info('Verified {}'.format(relpath))
                         else:
-                            cli.logger.warn('Failed to verify {}: digest mismatch'.format(relpath))
+                            cli.logger.warning('Failed to verify {}: digest mismatch'.format(relpath))
                             retval = 1
                     else:
-                        cli.logger.warn('Failed to verify {}: not found'.format(relpath))
+                        cli.logger.warning('Failed to verify {}: not found'.format(relpath))
                         retval = 1
                 else:
-                    cli.logger.warn('Failed to verify {}: parent folder does not exist'.format(relpath))
+                    cli.logger.warning('Failed to verify {}: parent folder does not exist'.format(relpath))
                     retval = 1
 
         cli.logger.info('{:.2f} MiB across {} items, elapsed time {}'.format(

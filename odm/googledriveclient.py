@@ -55,7 +55,7 @@ class GoogleDriveClient:
             try:
                 result = self._request(verb, path, **kwargs)
             except requests.exceptions.RequestException as e:
-                self.logger.warn(e)
+                self.logger.warning(e)
                 continue
 
             if result.status_code == 403 and attempt > 3:
@@ -65,7 +65,7 @@ class GoogleDriveClient:
                 attempt += 1
                 # Jittered backoff
                 delay = random.uniform(0, min(300, 3 * 2 ** attempt))
-                self.logger.warn('Throttled, sleeping for {} seconds'.format(delay))
+                self.logger.info('Throttled, sleeping for {} seconds'.format(delay))
                 time.sleep(delay)
             else:
                 result.raise_for_status()
@@ -94,7 +94,7 @@ class GoogleDriveClient:
         if existing:
             return existing['id']
 
-        self.logger.debug('Creating {} under {}'.format(name, parent))
+        self.logger.info('Creating {} under {}'.format(name, parent))
         payload = {
             'name': name,
         }
@@ -144,7 +144,7 @@ class GoogleDriveClient:
         existing = self.verify_file(file_name, name, parent)
         if existing:
             if existing['verified']:
-                self.logger.debug('Verified {}'.format(file_name))
+                self.logger.info('Verified {}'.format(file_name))
                 return True
 
             upload = self.request(
@@ -174,7 +174,7 @@ class GoogleDriveClient:
             )
         path = upload.headers['location']
 
-        self.logger.debug('Uploading {}'.format(file_name))
+        self.logger.info('Uploading {}'.format(file_name))
         while not result:
             if attempt > 0:
                 # Determine the status of the upload
@@ -184,7 +184,7 @@ class GoogleDriveClient:
                         headers = {'Content-Range': 'bytes */{}'.format(stat.st_size)}
                     )
                 except requests.exceptions.RequestException as e:
-                    self.logger.warn(e)
+                    self.logger.warning(e)
                     return False
                 else:
                     if result.status_code in [200, 201]:
@@ -194,7 +194,7 @@ class GoogleDriveClient:
                             seek = result.headers['range'].split('-')[1]
                         self.logger.debug('Resuming upload at byte {}'.format(seek))
                     else:
-                        self.logger.warn('Upload resumption failed, HTTP {}'.format(result.status_code))
+                        self.logger.warning('Upload resumption failed, HTTP {}'.format(result.status_code))
                         return False
 
             attempt += 1
@@ -213,7 +213,7 @@ class GoogleDriveClient:
                         },
                     )
                 except requests.exceptions.RequestException as e:
-                    self.logger.warn(e)
+                    self.logger.warning(e)
 
             if result is None or result.status_code == 403 or result.status_code >= 500:
                 delay = random.uniform(0, min(300, 3 * 2 ** attempt))
@@ -221,7 +221,7 @@ class GoogleDriveClient:
                     msg = 'HTTP {}'.format(result.status_code)
                 else:
                     msg = 'Error'
-                self.logger.warn('{}, sleeping for {} seconds'.format( msg, delay))
+                self.logger.info('{}, sleeping for {} seconds'.format( msg, delay))
                 time.sleep(delay)
                 result = None
             elif result.status_code == 308:
