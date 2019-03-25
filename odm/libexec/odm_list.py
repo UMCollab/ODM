@@ -19,7 +19,7 @@ import odm.cli
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['--dest', '--upload-dest', '--limit', '--exclude', '--start', '--diff', 'file', 'action'])
+    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-path', '--limit', '--exclude', '--diff', 'file', 'action'])
     client = cli.client
 
     ts_start = datetime.datetime.now()
@@ -28,7 +28,7 @@ def main():
     with open(cli.args.file, 'rb') as f:
         metadata = json.load(f)
 
-    destdir = cli.args.dest.rstrip('/') if cli.args.dest else '/var/tmp'
+    destdir = cli.args.filetree.rstrip('/') if cli.args.filetree else '/var/tmp'
 
     if cli.args.action == 'convert-notebooks':
         for book in metadata['notebooks']:
@@ -41,13 +41,13 @@ def main():
                 exclude = [e.rstrip() for e in list(f)]
 
         if cli.args.action == 'upload':
-            if not cli.args.upload_dest:
-                print('No upload destination specified.', file = sys.stderr)
+            upload_user = cli.args.upload_user
+            if not upload_user:
+                print('No upload user specified.', file = sys.stderr)
                 sys.exit(1)
 
-            upload_dest = cli.args.upload_dest.split('/', 1)
             upload_path = None
-            for d in client.list_drives(upload_dest[0]):
+            for d in client.list_drives(upload_user):
                 if d['name'] == 'OneDrive':
                     upload_drive = d['id']
                     upload_path = d['root']['id']
@@ -56,11 +56,10 @@ def main():
                 print('Unable to find destination OneDrive for {}'.format(upload_dest[0]), file = sys.stderr)
                 sys.exit(1)
 
-            if len(upload_dest) == 2:
-                for tok in upload_dest[1].split('/'):
+            if cli.args.upload_path:
+                for tok in cli.args.upload_path.split('/'):
                     ret = client.create_folder(upload_drive, upload_path, tok)
                     upload_path = ret['id']
-            id_map = {}
 
         size = 0
         count = 0
@@ -167,7 +166,7 @@ def main():
                             continue
 
                         result = client.create_notebook(
-                            upload_dest[0],
+                            upload_user,
                             upload_drive,
                             parent['upload_id'],
                             step['name'],
@@ -216,8 +215,8 @@ def main():
 
     elif cli.args.action == 'clean-filetree':
         fullpaths = [client.expand_path(x, metadata['items'], True) for x in metadata['items'] if 'file' in metadata['items'][x]]
-        for root, dirs, files in os.walk(cli.args.dest):
-            relpath = os.path.relpath(root, cli.args.dest)
+        for root, dirs, files in os.walk(cli.args.filetree):
+            relpath = os.path.relpath(root, cli.args.filetree)
             for fname in files:
                 relfpath = '/'.join([relpath, fname])
                 if relfpath[:2] == './':

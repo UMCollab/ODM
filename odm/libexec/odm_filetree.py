@@ -14,7 +14,7 @@ import odm.cli
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['path', 'action', 'user', '--dest'], 'microsoft')
+    cli = odm.cli.CLI(['path', 'action', 'user', '--upload-path'], 'microsoft')
     client = cli.client
     dir_map = {}
 
@@ -30,8 +30,8 @@ def main():
                 drive = d['id']
                 parent = d['root']['id']
 
-        if cli.args.dest:
-            for tok in cli.args.dest.split('/'):
+        if cli.args.upload_path:
+            for tok in cli.args.upload_path.split('/'):
                 if cli.args.action == 'upload':
                     parent = client.create_folder(drive, parent, tok)['id']
 #                else:

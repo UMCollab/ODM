@@ -77,6 +77,7 @@ metadata file instead of the live API.
 odm user ezekielh show
 odm user ezekielh list-drives
 odm user ezekielh list-items > ezekielh.json
+odm user ezekielh list-items --incremental ezekielh.json > ezekielh-$(date +%f).json
 ```
 
 ### Download items
@@ -88,11 +89,18 @@ an existing destination folder by deleting extraneous files.
 ```
 odm list ezekielh.json list-filenames
 odm list ezekielh.json download-estimate
-odm list ezekielh.json download --dest /var/tmp/ezekielh
-odm list ezekielh.json verify --dest /var/tmp/ezekielh
-odm list ezekielh.json clean-filetree --dest /var/tmp/ezekielh
+odm list ezekielh.json download --filetree /var/tmp/ezekielh
+odm list ezekielh.json verify --filetree /var/tmp/ezekielh
+odm list ezekielh.json clean-filetree --filetree /var/tmp/ezekielh
 ```
 
+### Upload items
+
+```
+odm list ezekielh.json upload --filetree /var/tmp/ezekielh --upload-user flowerysong
+odm list ezekielh.json upload --filetree /var/tmp/ezekielh --upload-user flowerysong --upload-path 'other users/ezekielh'
+odm filetree /var/tmp/ezekielh upload flowerysong --upload-path 'other users/ezekielh'
+```
 
 ### Convert OneNote notebooks
 
@@ -101,7 +109,7 @@ extracted and converted to HTML documents.
 
 ```
 odm user ezekielh list-notebooks > ezekielh-onenote.json
-odm list ezekielh-onenote.json convert-notebooks --dest '/var/tmp/ezekielh/Exported from OneNote'
+odm list ezekielh-onenote.json convert-notebooks --filetree '/var/tmp/ezekielh/Exported from OneNote'
 ```
 
 ## Uploading to Google Drive
