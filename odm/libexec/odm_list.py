@@ -28,7 +28,7 @@ def main():
     with open(cli.args.file, 'rb') as f:
         metadata = json.load(f)
 
-    destdir = cli.args.dest if cli.args.dest else '/var/tmp'
+    destdir = cli.args.dest.rstrip('/') if cli.args.dest else '/var/tmp'
 
     if cli.args.action == 'convert-notebooks':
         for book in metadata['notebooks']:
@@ -64,71 +64,34 @@ def main():
 
         size = 0
         count = 0
-        started = not cli.args.start
 
-        for item in metadata['items']:
-            if not started:
-                if item['fullpath'] == cli.args.start:
-                    started = True
-                else:
-                    cli.logger.debug(u'Start point not reached, skipping item {}'.format(item['fullpath']))
-                    continue
+        for item_id in metadata['items']:
+            item = metadata['items'][item_id]
+            if 'file' not in item:
+                continue
 
-            if item['fullpath'] in exclude:
-                cli.logger.debug(u'Skipping excluded item {}'.format(item['fullpath']))
+            item_path = client.expand_path(item_id, metadata['items'])
+
+            if item_path in exclude:
+                cli.logger.debug(u'Skipping excluded item {}'.format(item_path))
                 continue
 
             if cli.args.limit:
-                if not item['fullpath'].startswith(cli.args.limit):
-                    cli.logger.debug(u'Skipping non-matching item {}'.format(item['fullpath']))
+                if not item_path.startswith(cli.args.limit):
+                    cli.logger.debug(u'Skipping non-matching item {}'.format(item_path))
                     continue
 
-            if cli.args.action == 'upload' and 'id' in item['parentReference'] and item['parentReference']['id'] not in id_map:
-                cli.logger.warn(u'Unknown parent, skipping item {}'.format(item['fullpath']))
-                continue
-
-            if 'file' not in item:
-                if 'folder' not in item and 'package' not in item:
-                    cli.logger.debug(u'Skipping non-file {}'.format(item['fullpath']))
-                if cli.args.action == 'upload':
-                    if 'folder' in item:
-                        cli.logger.debug(u'Mapping folder {} / {}'.format(item['name'], item['id']))
-                        if 'id' not in item['parentReference']:
-                            id_map[item['id']] = upload_path
-                        else:
-                            result = client.create_folder(
-                                upload_drive,
-                                id_map[item['parentReference']['id']],
-                                item['name'],
-                            )
-                            if result:
-                                id_map[item['id']] = result['id']
-                            else:
-                                cli.logger.error(u'Failed to create folder for {}'.format(item['fullpath']))
-                                retval = 1
-                    else:
-                        result = client.create_notebook(
-                            upload_dest[0],
-                            upload_drive,
-                            id_map[item['parentReference']['id']],
-                            item['name'],
-                        )
-                        if result:
-                            id_map[item['id']] = result['id']
-                        else:
-                            cli.logger.error(u'Failed to create notebook for {}'.format(item['fullpath']))
-                            retval = 1
-                continue
+            cli.logger.debug(u'Working on {}'.format(item_path))
 
             if 'malware' in item:
-                cli.logger.info(u'{} is tagged as malware and cannot be downloaded'.format(item['fullpath']))
+                cli.logger.info(u'{} is tagged as malware and cannot be processed'.format(item_path))
                 continue
 
-            cli.logger.debug(u'Working on {}'.format(item['fullpath']))
             size += item['size']
             count += 1
 
-            dest = '/'.join([destdir, item['fullpath']])
+            dest = '/'.join([destdir, client.expand_path(item_id, metadata['items'], True)])
+
             digest = None
             if 'hashes' in item['file']:
                 digest = item['file']['hashes']['quickXorHash']
@@ -141,13 +104,12 @@ def main():
             if (not cli.args.diff) or ('hash' in cli.args.diff.split(',')):
                 verify_args['file_hash'] = digest
 
-
             if cli.args.action == 'download':
                 verify_args['strict'] = False
                 if client.verify_file(**verify_args):
                     cli.logger.info(u'Verified {}'.format(dest))
                 else:
-                    cli.logger.info(u'Downloading {} to {}'.format(item['fullpath'], dest))
+                    cli.logger.info(u'Downloading {} to {}'.format(item_path, dest))
                     attempt = 0
                     result = None
                     while attempt < 3 and result is None:
@@ -179,11 +141,65 @@ def main():
                     retval = 1
 
             elif cli.args.action == 'upload':
-                parent = id_map[item['parentReference']['id']]
-                client.upload_file(dest, upload_drive, parent, item['name'])
+                steps = []
+                # Find parents by tracing up through references
+                cur = item
+                while 'upload_id' not in cur:
+                    if 'id' not in cur['parentReference']:
+                        # This is the root folder
+                        cur['upload_id'] = upload_path
+                    else:
+                        steps.insert(0, cur)
+                        cur = metadata['items'][cur['parentReference']['id']]
+
+                for step in steps:
+                    step_path = client.expand_path(step['id'], metadata['items'])
+                    parent = metadata['items'][step['parentReference']['id']]
+                    if parent['upload_id'] == 'skip':
+                        cli.logger.debug(u'Skipping descendant {}'.format(step_path))
+                        step['upload_id'] = 'skip'
+                        continue
+
+                    if 'package' in step:
+                        if step['package']['type'] != 'oneNote':
+                            cli.logger.info(u'Skipping unknown package {} ({})'.format(step_path, step['package']['type']))
+                            step['upload_id'] = 'skip'
+                            continue
+
+                        result = client.create_notebook(
+                            upload_dest[0],
+                            upload_drive,
+                            parent['upload_id'],
+                            step['name'],
+                        )
+                        if result:
+                            step['upload_id'] = result['id']
+                        else:
+                            step['upload_id'] = 'skip'
+                            cli.logger.error(u'Failed to create notebook {}'.format(step_path))
+                            retval = 1
+
+                    elif 'folder' in step:
+                        result = client.create_folder(
+                            upload_drive,
+                            parent['upload_id'],
+                            step['name'],
+                        )
+                        if result:
+                            step['upload_id'] = result['id']
+                        else:
+                            step['upload_id'] = 'skip'
+                            cli.logger.error(u'Failed to create folder {}'.format(step_path))
+                    else:
+                        result = client.upload_file(dest, upload_drive, parent['upload_id'], step['name'])
+                        if result:
+                            step['upload_id'] = result['id']
+                        else:
+                            step['upload_id'] = 'failed'
+                            cli.logger.error(u'Failed to upload {}'.format(step_path))
 
             elif cli.args.action == 'list-filenames':
-                print(item['fullpath'])
+                print(item_path)
 
         if cli.args.action == 'download-estimate':
             delta_msg = 'wild guess time {!s}'.format(
@@ -199,7 +215,7 @@ def main():
         ))
 
     elif cli.args.action == 'clean-filetree':
-        fullpaths = [x['fullpath'] for x in metadata['items']]
+        fullpaths = [client.expand_path(x, metadata['items'], True) for x in metadata['items'] if 'file' in metadata['items'][x]]
         for root, dirs, files in os.walk(cli.args.dest):
             relpath = os.path.relpath(root, cli.args.dest)
             for fname in files:

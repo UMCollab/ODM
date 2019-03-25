@@ -32,12 +32,23 @@ def main():
             print('Site {} not found'.format(cli.args.site), file = sys.stderr)
             sys.exit(1)
 
-        items = client.expand_items([d['root'] for d in site['drives']])
-        if cli.args.incremental:
-            with open(cli.args.incremental, 'rb') as f:
-                old = json.load(f)['items']
-                items = [x for x in items if x not in old]
-        print(json.dumps({ 'items': items }, indent = 2))
+        items = []
+        if len(site['drives']) > 1:
+            print('Multi-drive sites are not supported', file = sys.stderr)
+            sys.exit(1)
+
+        base = {
+            'items': {},
+        }
+
+        if site['drives']:
+            if cli.args.incremental:
+                with open(cli.args.incremental, 'rb') as f:
+                    base = json.load(f)
+
+            client.delta_items(site['drives'][0]['id'], base)
+
+        print(json.dumps(base, indent = 2))
 
     else:
         print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)

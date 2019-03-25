@@ -37,8 +37,19 @@ def main():
 
         drives = client.list_drives(cli.args.user)
 
-        items = client.expand_items([drive['root'] for drive in drives if drive['name'] == 'OneDrive'], cli.args.incremental)
-        print(json.dumps({ 'items': items }, indent = 2))
+        base = {
+            'items': {},
+        }
+
+        if cli.args.incremental:
+            with open(cli.args.incremental, 'rb') as f:
+                base = json.load(f)
+
+        for d in drives:
+            if d['name'] == 'OneDrive':
+                client.delta_items(d['id'], base)
+
+        print(json.dumps(base, indent = 2))
 
     elif cli.args.action == 'list-notebooks':
         # This consistently throws a 403 for some users

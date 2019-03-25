@@ -179,61 +179,55 @@ class OneDriveClient:
     def list_folder(self, drive_id, folder):
         return self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware,lastModifiedDateTime'.format(drive_id, folder))['value']
 
-    def expand_items(self, items, incremental = None):
-        if incremental:
-            items = [item for item in items if item['lastModifiedDateTime'] > incremental]
+    def delta_items(self, drive_id, base):
+        path = 'drives/{}/root/delta?select=deleted,file,fileSystemInfo,folder,id,malware,name,package,parentReference,permissions,size'.format(drive_id)
 
-        expanded = True
-        while expanded:
-            expanded = False
-            bad_items = []
-            for item in items:
-                if 'fullpath' not in item:
-                    if 'path' in item['parentReference']:
-                        parent = re.sub(
-                            '/drives/[^/]+/root:/{0,1}',
-                            '',
-                            item['parentReference']['path']
-                        )
-                        name = item['name']
-                        if parent:
-                            name = '/'.join([parent, name])
-                        fullpath = []
-                        for tok in name.split('/'):
-                            while len(tok.encode('utf-8')) > 255:
-                                item['mangled_path'] = True
-                                for i in range(0, len(tok)):
-                                    if len(tok[:i].encode('utf-8')) > 255:
-                                        i -= 1
-                                        break
-                                fullpath.append(tok[:i])
-                                tok = tok[i:]
-                            fullpath.append(tok)
-                        item['fullpath'] = '/'.join(fullpath)
-                    else:
-                        item['fullpath'] = '/'
+        token = base.get('token')
+        if token:
+            # FIXME: need to deal with expired tokens
+            path += '&token={}'.format(token)
 
-                if 'folder' in item or 'package' in item:
-                    if 'expanded' not in item:
-                        items.extend(self.list_folder(item['parentReference']['driveId'], item['id']))
-                        item['expanded'] = True
-                        expanded = True
-                elif incremental and item['lastModifiedDateTime'] <= incremental:
-                    # We can't modify `items` while we're iterating over it,
-                    # so we'll maintain a list of items to remove.
-                    bad_items.append(item)
-                    self.logger.debug(u'{} is older than incremental timestamp {}, pruning'.format(item['fullpath'], incremental))
-                    continue
+        result = self.get_list(path)
 
-                if 'permissions' not in item:
-                    # The API doesn't support retrieving the permissions while
-                    # listing folder contents, so we get to make even more calls.
-                    item.update(self.msgraph.get('drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])).json())
+        base['token'] = result['@odata.deltaLink'].split('=')[-1]
 
-            for item in bad_items:
-                items.remove(item)
+        while len(result['value']):
+            item = result['value'].pop(0)
+            if 'deleted' not in item:
+                item.update(
+                    self.msgraph.get(
+                    'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
+                    ).json()
+                )
+            if item['id'] in base['items']:
+                base['items'][item['id']].update(item)
+            else:
+                base['items'][item['id']] = item
 
-        return items
+        return base
+
+    def expand_path(self, item_id, items, fs_safe = False):
+        path = []
+
+        while 'id' in items[item_id]['parentReference']:
+            name = items[item_id]['name']
+
+            while fs_safe and len(name.encode('utf-8')) > 255:
+                # Find the longest string that will fit in 255 bytes once encoded
+                for i in range(0, len(name)):
+                    if len(name[:i].encode('utf-8')) > 255:
+                        i -= 1
+                        break
+                # Add it as a separate dir and remove it from the name
+                path.insert(0, name[:i])
+                name = name[i:]
+
+            path.insert(0, name)
+            item_id = items[item_id]['parentReference']['id']
+
+        if path:
+            return '/'.join(path)
+        return '/'
 
     def verify_file(self, dest, size = None, file_hash = None, strict = True):
         if not os.path.exists(dest):
