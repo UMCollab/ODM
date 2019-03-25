@@ -212,17 +212,20 @@ class OneDriveClient:
         while 'id' in items[item_id]['parentReference']:
             name = items[item_id]['name']
 
+            i = 0
             while fs_safe and len(name.encode('utf-8')) > 255:
-                # Find the longest string that will fit in 255 bytes once encoded
-                for i in range(0, len(name)):
-                    if len(name[:i].encode('utf-8')) > 255:
-                        i -= 1
+                # Many Unix filesystems only allow filenames <= 255 bytes. Find
+                # the longest string that will fit in 255 bytes once encoded.
+                for j in range(0, len(name)):
+                    if len(name[:j].encode('utf-8')) > 255:
+                        j -= 1
                         break
                 # Add it as a separate dir and remove it from the name
-                path.insert(0, name[:i])
-                name = name[i:]
+                path.insert(i, name[:j])
+                i += 1
+                name = name[j:]
 
-            path.insert(0, name)
+            path.insert(i, name)
             item_id = items[item_id]['parentReference']['id']
 
         if path:
