@@ -78,10 +78,16 @@ class OneDriveClient:
                     result['value'].extend(decoded['value'])
                 else:
                     result = decoded
+
+                for key in decoded:
+                    if key not in ['value', '@odata.nextLink']:
+                        result[key] = decoded[key]
+
                 if '@odata.nextLink' in decoded:
                     self.logger.debug('Getting next page...')
                     path = decoded['@odata.nextLink']
                     page_result = None
+
 
         return result
 
@@ -180,7 +186,7 @@ class OneDriveClient:
         return self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware,lastModifiedDateTime'.format(drive_id, folder))['value']
 
     def delta_items(self, drive_id, base):
-        path = 'drives/{}/root/delta?select=deleted,file,fileSystemInfo,folder,id,malware,name,package,parentReference,permissions,size'.format(drive_id)
+        path = 'drives/{}/root/delta?select=deleted,file,fileSystemInfo,folder,id,malware,name,package,parentReference,size'.format(drive_id)
 
         token = base.get('token')
         if token:
@@ -199,6 +205,11 @@ class OneDriveClient:
                     'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
                     ).json()
                 )
+
+                # Don't record inherited permissions
+                if (not item['permissions']) or ('inheritedFrom' in item['permissions'][0]):
+                    item.pop('permissions', None)
+
             if item['id'] in base['items']:
                 base['items'][item['id']].update(item)
             else:
@@ -399,6 +410,31 @@ class OneDriveClient:
                     s['pages'] = self.get_list(s['pagesUrl'])['value']
             return notebooks['value']
         return []
+
+    def share_file(self, drive_id, item_id, user, roles):
+        payload = {
+            'sendInvitation': False,
+            'requireSignIn': True,
+            # FIXME: Why can't we set owner via the API?
+            'roles': ['write' if x == 'owner' else x for x in roles],
+            'recipients': [
+                {
+                    'email': user,
+                },
+            ],
+        }
+
+        result = self.msgraph.post('drives/{}/items/{}/invite'.format(drive_id, item_id), json=payload)
+        result.raise_for_status()
+
+        if 'owner' in roles:
+            payload = {
+                'roles': roles,
+            }
+            result = self.msgraph.patch('drives/{}/items/{}/permissions/{}'.format(drive_id, item_id, result.json()['value'][0]['id']), json=payload)
+            result.raise_for_status()
+
+        return result.json()
 
     def _convert_page(self, page_url, page_name, dest, quirky):
         if not os.path.exists(dest + '/data'):

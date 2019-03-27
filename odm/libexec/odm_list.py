@@ -197,6 +197,23 @@ def main():
                             step['upload_id'] = 'failed'
                             cli.logger.error(u'Failed to upload %s', step_path)
 
+                    if 'upload_id' in step and 'permissions' in step:
+                        for perm in step['permissions']:
+                            if 'link' in perm:
+                                cli.logger.info(u'Skipping %s scoped shared link', perm['link']['scope'])
+                                continue
+
+                            (user, domain) = perm['grantedTo']['user']['email'].split('@')
+                            # FIXME: probably should key off of source user, not upload user, and care about domain
+                            if user != upload_user:
+                                cli.logger.info(u'Applying permissions')
+                                client.share_file(
+                                    upload_drive,
+                                    step['upload_id'],
+                                    '{}@{}'.format(user, cli.config['domain']),
+                                    perm['roles'],
+                                )
+
             elif cli.args.action == 'list-filenames':
                 print(item_path)
 
