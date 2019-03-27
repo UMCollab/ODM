@@ -465,13 +465,6 @@ class OneDriveClient:
         result = self.msgraph.post('drives/{}/items/{}/invite'.format(drive_id, item_id), json=payload)
         result.raise_for_status()
 
-        if 'owner' in roles:
-            payload = {
-                'roles': roles,
-            }
-            result = self.msgraph.patch('drives/{}/items/{}/permissions/{}'.format(drive_id, item_id, result.json()['value'][0]['id']), json=payload)
-            result.raise_for_status()
-
         return result.json()
 
     def _convert_page(self, page_url, page_name, dest, quirky):
