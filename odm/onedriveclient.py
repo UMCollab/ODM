@@ -187,10 +187,13 @@ class OneDriveClient:
         return self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware,lastModifiedDateTime'.format(drive_id, folder))['value']
 
     def delta_items(self, drive_id, base):
+        include_delta = False
+
         path = 'drives/{}/root/delta?select=deleted,file,fileSystemInfo,folder,id,malware,name,package,parentReference,size'.format(drive_id)
 
         token = base.get('token')
         if token:
+            include_delta = True
             # FIXME: need to deal with expired tokens
             path += '&token={}'.format(token)
 
@@ -198,10 +201,20 @@ class OneDriveClient:
 
         base['token'] = result['@odata.deltaLink'].split('=')[-1]
 
+        delta = {
+            'deleted': [],
+            'changed': [],
+        }
+
         while len(result['value']):
             item = result['value'].pop(0)
+            old = base['items'].pop(item['id'], None)
             if 'deleted' in item:
-                base['items'].pop(item['id'], None)
+                # Save the whole old item, since we don't want to pollute
+                # `items` with deleted things.
+                if old:
+                    delta['deleted'].append(old)
+
             else:
                 item.update(
                     self.msgraph.get(
@@ -218,10 +231,27 @@ class OneDriveClient:
                     if '@odata' in key:
                         item.pop(key, None)
 
-            if item['id'] in base['items']:
-                base['items'][item['id']].update(item)
-            else:
-                base['items'][item['id']] = item
+                if old:
+                    # Drop information about previous renames
+                    old.pop('oldName', None)
+
+                    # Save the old name if it's different
+                    if old['name'] != item['name']:
+                        old['oldName'] = old['name']
+
+                    old.update(item)
+
+                    # Only need to save the ID here, everything else should be
+                    # determinable from the main entry.
+                    delta['changed'].append(old['id'])
+
+                    base['items'][item['id']] = old
+
+                else:
+                    base['items'][item['id']] = item
+
+        if include_delta:
+            base['delta'] = delta
 
         return base
 
