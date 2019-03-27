@@ -119,6 +119,7 @@ class OneDriveClient:
         return self.get_list('sites?search=')['value']
 
     def create_folder(self, drive_id, parent, name):
+        # FIXME: query by path would probably be less expensive
         children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
         for child in children:
             if child['name'] == name:
