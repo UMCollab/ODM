@@ -74,6 +74,7 @@ class OneDriveClient:
             else:
                 page_result.raise_for_status()
                 decoded = page_result.json()
+
                 if result:
                     result['value'].extend(decoded['value'])
                 else:
@@ -199,7 +200,9 @@ class OneDriveClient:
 
         while len(result['value']):
             item = result['value'].pop(0)
-            if 'deleted' not in item:
+            if 'deleted' in item:
+                base['items'].pop(item['id'], None)
+            else:
                 item.update(
                     self.msgraph.get(
                     'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
@@ -209,6 +212,11 @@ class OneDriveClient:
                 # Don't record inherited permissions
                 if (not item['permissions']) or ('inheritedFrom' in item['permissions'][0]):
                     item.pop('permissions', None)
+
+                # Remove unused odata information
+                for key in list(item):
+                    if '@odata' in key:
+                        item.pop(key, None)
 
             if item['id'] in base['items']:
                 base['items'][item['id']].update(item)
