@@ -224,8 +224,9 @@ class OneDriveClient:
                 )
 
                 # Don't record inherited permissions
-                if (not item['permissions']) or ('inheritedFrom' in item['permissions'][0]):
-                    item.pop('permissions', None)
+                perms = item.pop('permissions', None)
+                if perms and 'inheritedFrom' not in perms[0]:
+                    item['permissions'] = perms
 
                 # Remove unused odata information
                 for key in list(item):
