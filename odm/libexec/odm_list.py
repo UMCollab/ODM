@@ -19,7 +19,7 @@ import odm.cli
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-path', '--limit', '--exclude', '--diff', 'file', 'action'])
+    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-path', '--domain-map', '--limit', '--exclude', '--diff', 'file', 'action'])
     client = cli.client
 
     ts_start = datetime.datetime.now()
@@ -40,6 +40,7 @@ def main():
             with open(cli.args.exclude, 'rb') as f:
                 exclude = [e.rstrip() for e in list(f)]
 
+        domain_map = {}
         if cli.args.action == 'upload':
             upload_user = cli.args.upload_user
             if not upload_user:
@@ -60,6 +61,11 @@ def main():
                 for tok in cli.args.upload_path.split('/'):
                     ret = client.create_folder(upload_drive, upload_path, tok)
                     upload_path = ret['id']
+
+            if cli.args.domain_map:
+                for mapping in cli.args.domain_map.lower().split(','):
+                    (src, dst)  = mapping.split(':')
+                    domain_map[src] = dst
 
         size = 0
         count = 0
@@ -204,13 +210,16 @@ def main():
                                 continue
 
                             (user, domain) = perm['grantedTo']['user']['email'].split('@')
-                            # FIXME: probably should key off of source user, not upload user, and care about domain
+                            if domain in domain_map:
+                                domain = domain_map[domain]
+
+                            # FIXME: probably should key off of source user, not upload user
                             if user != upload_user:
                                 cli.logger.info(u'Applying permissions')
                                 client.share_file(
                                     upload_drive,
                                     step['upload_id'],
-                                    '{}@{}'.format(user, cli.config['domain']),
+                                    '{}@{}'.format(user, domain),
                                     perm['roles'],
                                 )
 
