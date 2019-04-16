@@ -391,17 +391,13 @@ class OneDriveClient:
         if existing:
             return existing
 
-        # The documentation says 4 MB; they might actually mean MiB but eh.
-        if stat.st_size < 4 * 1000 * 1000:
-            with open(src, 'rb') as f:
-                result = self.msgraph.put(u'drives/{}/items/{}:/{}:/content'.format(drive_id, parent, fname), data=f)
-            result.raise_for_status()
-            return result.json()
-
         payload = {
             'item': {
                 '@microsoft.graph.conflictBehavior': 'replace',
                 'name': fname,
+                'fileSystemInfo': {
+                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
+                },
             },
         }
 
