@@ -209,19 +209,21 @@ def main():
                                 cli.logger.info(u'Skipping %s scoped shared link', perm['link']['scope'])
                                 continue
 
+                            if 'owner' in perm['roles']:
+                                cli.logger.debug(u'Skipping owner permission')
+                                continue
+
                             (user, domain) = perm['grantedTo']['user']['email'].split('@')
                             if domain in domain_map:
                                 domain = domain_map[domain]
 
-                            # FIXME: probably should key off of source user, not upload user
-                            if user != upload_user:
-                                cli.logger.info(u'Applying permissions')
-                                client.share_file(
-                                    upload_drive,
-                                    step['upload_id'],
-                                    '{}@{}'.format(user, domain),
-                                    perm['roles'],
-                                )
+                            cli.logger.info(u'Applying permissions')
+                            client.share_file(
+                                upload_drive,
+                                step['upload_id'],
+                                '{}@{}'.format(user, domain),
+                                perm['roles'],
+                            )
 
             elif cli.args.action == 'list-filenames':
                 print(item_path)
