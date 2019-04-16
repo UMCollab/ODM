@@ -25,9 +25,10 @@ The gdm command requires credentials for an authorized Google service account.
 ### Azure AD 2.0
 
 * Register your client at https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
-
-* Register your client at https://apps.dev.microsoft.com/ (Azure AD 2.0 clients
-  are also called "Converged applications").
+    * Click `New registration`
+    * Give your client a name and click `Register`
+    * Use the displayed `Application (client) ID` as the `client_id` in your
+      ODM config.
     * Under `Certificates & secrets` select `New client secret`; use this as
       the `client_secret` in your ODM config.
     * Under `API Permissions` add the necessary application
@@ -124,18 +125,32 @@ gdm filetree /var/tmp/ezekielh verify ezekielh --dest "Magically Delicious"
 * The modification time of individual files is preserved wherever possible, but
   no attempt is made to preserve the mtime of folders.
 
+* It is possible for additional owners to be added to files in a user's OneDrive
+  by poking deep into the bowels of the SharePoint web interface; this is not
+  possible via the OneDrive API and no attempt is made to preserve these
+  permissions.
+
+* Shared links are not recreated during upload; this functionality *is* exposed
+  via the API, but it's not clear that it would be useful behaviour.
+
+* Files uploaded to OneDrive will show up as last modified by `SharePoint App`;
+  it is impossible to preserve the original modification information or have it
+  display a less generic name.
+
 * OneDrive filenames can be up to 400 characters in length, while most Unix
   filesystems only allow 255 bytes (which could be as few as 63 UTF-8
   characters.) If ODM encounters a filename or path component that is more than
   255 bytes it chunks the excess characters into leading directory components.
+  Metadata-based uploads (`odm list upload`) will upload as the original name,
+  but filetree-based uploads (`odm filetree` or `gdm filetree`) will not.
 
 * OneNote files can be downloaded via the OneDrive API, but they do not have an
   associated hash and do not reliably report the actual download size via the
   API so no verification is possible.
 
 * OneDrive will sometimes return an incorrect file hash when listing files.
-  Once the file has been downloaded, the API will then return the correct
-  hash.
+  Once the file has been downloaded, the API will then (usually) return the
+  correct hash.
 
 * Files detected as malware by OneDrive's scanning cannot be downloaded via
   the API.
@@ -146,12 +161,6 @@ gdm filetree /var/tmp/ezekielh verify ezekielh --dest "Magically Delicious"
   dealing with any significant amount of data fingerprint calculation can be
   sped up quite a bit by installing
   [libqxh](https://github.com/flowerysong/quickxorhash).
-
-## Migration Tooling
-
-ODM is fairly well tested at this point, having been used at the University of
-Michigan to do a one-time migration of ~6000 users with a total of 5 TiB of
-data. An example migration script can be found in the contrib directory.
 
 ## Further Information On OneNote Exports
 
