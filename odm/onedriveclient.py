@@ -16,6 +16,8 @@ import string
 import sys
 import time
 
+from datetime import datetime
+
 import requests
 import requests_toolbelt
 
@@ -395,13 +397,17 @@ class OneDriveClient:
             'item': {
                 '@microsoft.graph.conflictBehavior': 'replace',
                 'name': fname,
-                'fileSystemInfo': {
-                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
-                },
+                # FIXME: returns 400. Why?
+#                'fileSystemInfo': {
+#                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
+#                },
             },
         }
 
-        upload = self.msgraph.post(u'drives/{}/items/{}:/{}:/createUploadSession'.format(drive_id, parent, fname), json=payload).json()
+        upload_req = self.msgraph.post(u'drives/{}/items/{}:/{}:/createUploadSession'.format(drive_id, parent, fname), json=payload)
+        upload_req.raise_for_status()
+
+        upload = upload_req.json()
         upload_url = upload['uploadUrl']
 
         start = 0
@@ -426,6 +432,7 @@ class OneDriveClient:
                     'Content-Length': str(size),
                     'Content-Range': 'bytes {}-{}/{}'.format(start, end, stat.st_size),
                 },
+                timeout = self.config.get('timeout', 60) * 20,
             )
             if result.status_code == 404:
                 self.logger.info('Invalid upload session')
