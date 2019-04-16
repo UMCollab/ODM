@@ -148,6 +148,10 @@ gdm filetree /var/tmp/ezekielh verify ezekielh --dest "Magically Delicious"
   associated hash and do not reliably report the actual download size via the
   API so no verification is possible.
 
+* Due to a limitation in the OneNote API any notebook upload will create a
+  `Notebooks` directory in the root of the drive, even if the final destination
+  is not underneath that location.
+
 * OneDrive will sometimes return an incorrect file hash when listing files.
   Once the file has been downloaded, the API will then (usually) return the
   correct hash.
