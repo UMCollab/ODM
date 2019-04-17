@@ -162,6 +162,20 @@ class OneDriveClient:
         )
         result.raise_for_status()
 
+        result = None
+
+        # Find the OneDrive ID. I hate this.
+        notebooks = self.get_list('drives/{}/root:/Notebooks:/children?select=id,name'.format(drive_id))['value']
+        for item in notebooks:
+            if item['name'] == tmp_name:
+                result = self.move_item(drive_id, item['id'], parent, name)
+
+        if result:
+            return result.json()
+
+        return None
+
+    def move_item(self, drive_id, item_id, parent, name):
         payload = {
             'parentReference': {
                 'id': parent,
@@ -171,20 +185,13 @@ class OneDriveClient:
 
         result = None
 
-        # Find the OneDrive ID. I hate this.
-        notebooks = self.get_list('drives/{}/root:/Notebooks:/children?select=id,name'.format(drive_id))['value']
-        for item in notebooks:
-            if item['name'] == tmp_name:
-                result = self.msgraph.patch(
-                    'drives/{}/items/{}'.format(drive_id, item['id']),
-                    json = payload,
-                )
-                result.raise_for_status()
+        result = self.msgraph.patch(
+            'drives/{}/items/{}'.format(drive_id, item_id),
+            json = payload,
+        )
+        result.raise_for_status()
 
-        if result:
-            return result.json()
-
-        return None
+        return result
 
     def list_folder(self, drive_id, folder):
         return self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware,lastModifiedDateTime'.format(drive_id, folder))['value']
@@ -392,6 +399,13 @@ class OneDriveClient:
         existing = self.verify_upload(src, drive_id, parent, fname)
         if existing:
             return existing
+
+        # The documentation says 4 MB; they might actually mean MiB but eh.
+        if stat.st_size < 4 * 1000 * 1000:
+            with open(src, 'rb') as f:
+                result = self.msgraph.put(u'drives/{}/items/{}:/{}:/content'.format(drive_id, parent, fname), data=f)
+            result.raise_for_status()
+            return result.json()
 
         payload = {
             'item': {
