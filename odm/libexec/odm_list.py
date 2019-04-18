@@ -197,7 +197,6 @@ def main():
                             step['upload_id'] = 'failed'
                             cli.logger.error(u'Failed to upload %s', step_path)
 
-                    # FIXME: can folders have custom permissions?
                     # FIXME: what should we do about missing users?
                     if 'upload_id' in step and 'permissions' in step:
                         for perm in step['permissions']:

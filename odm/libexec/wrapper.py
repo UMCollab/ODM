@@ -23,10 +23,15 @@ def main():
         print('Failed to figure out what I am: {} is an invalid wrapper name'.format(sys.argv[0]))
         sys.exit(1)
 
+    # Allow -c <file> to occur before the subcommand
+    idx = 1
+    if sys.argv[1] in ['-c', '--config']:
+        idx = 3
+
     # This is incredibly ugly, but it works.
-    exec('from odm.libexec import {}_{} as subcommand'.format(cmd, sys.argv[1]))
-    sys.argv[0] += ' ' + sys.argv[1]
-    del(sys.argv[1])
+    exec('from odm.libexec import {}_{} as subcommand'.format(cmd, sys.argv[idx]))
+    sys.argv[0] += ' ' + sys.argv[idx]
+    del(sys.argv[idx])
     subcommand.main()
 
 if __name__ == '__main__':
