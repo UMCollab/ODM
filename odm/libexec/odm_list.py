@@ -16,10 +16,11 @@ import time
 import dateutil.parser
 
 import odm.cli
+import odm.ms365
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-path', '--domain-map', '--limit', '--exclude', '--diff', 'file', 'action'])
+    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-group', '--upload-path', '--domain-map', '--limit', '--exclude', '--diff', 'file', 'action'])
     client = cli.client
 
     ts_start = datetime.datetime.now()
@@ -43,24 +44,28 @@ def main():
         domain_map = {}
         if cli.args.action == 'upload':
             upload_user = cli.args.upload_user
-            if not upload_user:
-                cli.logger.critical(u'No upload user specified.')
-                sys.exit(1)
-
+            upload_group = cli.args.upload_group
             upload_path = None
-            for d in client.list_drives(upload_user):
-                if d['name'] == 'OneDrive':
-                    upload_drive = d['id']
-                    upload_path = d['root']['id']
 
-            if not upload_path:
-                cli.logger.critical(u'Unable to find destination OneDrive for %s', upload_user)
+            if upload_user:
+                upload_container = odm.ms365.User(client, upload_user)
+
+            elif upload_group:
+                upload_container = odm.ms365.Group(client, upload_group)
+
+            else:
+                cli.logger.critical(u'No upload destination specified')
                 sys.exit(1)
+
+            upload_drive = upload_container.drive
+            if not upload_drive:
+                cli.logger.critical(u'Unable to find destination drive for %s', upload_container)
+                sys.exit(1)
+            upload_path = upload_drive.root
 
             if cli.args.upload_path:
                 for tok in cli.args.upload_path.split('/'):
-                    ret = client.create_folder(upload_drive, upload_path, tok)
-                    upload_path = ret['id']
+                    upload_path = upload_path.create_folder(tok)
 
             if cli.args.domain_map:
                 for mapping in cli.args.domain_map.lower().split(','):
@@ -185,18 +190,13 @@ def main():
                             retval = 1
 
                     elif 'folder' in step:
-                        result = client.create_folder(
-                            upload_drive,
-                            parent['upload_id'],
-                            step['name'],
-                        )
-                        if result:
-                            step['upload_id'] = result['id']
-                        else:
+                        try:
+                            step['upload_id'] = parent['upload_id'].create_folder(step['name'])
+                        except TypeError:
                             step['upload_id'] = 'skip'
                             cli.logger.error(u'Failed to create folder %s', step_path)
                     else:
-                        result = client.upload_file(dest, upload_drive, parent['upload_id'], step['name'])
+                        result = parent['upload_id'].upload_file(dest, step['name'])
                         if result:
                             step['upload_id'] = result['id']
                         else:

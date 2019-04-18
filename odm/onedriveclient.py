@@ -103,8 +103,8 @@ class OneDriveClient:
     def show_user(self, user):
         return self.get_list('users/{}@{}'.format(user, self.config['domain']))
 
-    def list_drives(self, user):
-        drives = self.get_list('users/{}@{}/drives'.format(user, self.config['domain']))
+    def list_drives(self, owner_id, ns='users'):
+        drives = self.get_list('{}/{}@{}/drives'.format(ns, owner_id, self.config['domain']))
         if drives:
             for d in drives['value']:
                 d['root'] = self.get_list('drives/{}/root'.format(d['id']))
@@ -119,27 +119,6 @@ class OneDriveClient:
 
     def list_sites(self):
         return self.get_list('sites?search=')['value']
-
-    def create_folder(self, drive_id, parent, name):
-        # FIXME: query by path would probably be less expensive
-        children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
-        for child in children:
-            if child['name'] == name:
-                if 'folder' not in child:
-                    self.logger.warning(u'{} already exists but is not a folder'.format(name))
-                    return None
-                return child
-
-        payload = {
-            'name': name,
-            'folder': {},
-            '@microsoft.graph.conflictBehavior': 'fail',
-        }
-
-        result = self.msgraph.post('drives/{}/items/{}/children'.format(drive_id, parent), json=payload)
-
-        result.raise_for_status()
-        return result.json()
 
     def create_notebook(self, user, drive_id, parent, name):
         children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
@@ -354,110 +333,6 @@ class OneDriveClient:
         else:
             self.logger.error('Failed to fetch download link from API')
             return None
-
-
-    def verify_upload(self, src, drive_id, parent, fname):
-        result = self.list_folder(
-            drive_id,
-            parent,
-        )
-        match = None
-        for item in result:
-            if item['name'] == fname:
-                match = item
-                break
-
-        if not match:
-            return None
-
-        stat = os.stat(src)
-        if stat.st_size != match['size']:
-            return None
-
-        self.logger.info(u'Verified size of uploaded {}'.format(src))
-
-        if 'hashes' not in match['file']:
-            # Probably a OneNote file.
-            return match
-
-        h = quickxorhash.QuickXORHash()
-        fhash = h.hash_file(src)
-        if fhash == match['file']['hashes']['quickXorHash']:
-            self.logger.info(u'Verified uploaded {}'.format(src))
-            return match
-
-        return None
-
-    def upload_file(self, src, drive_id, parent, fname):
-        # 10 megabytes
-        chunk_size = 1024 * 1024 * 10
-
-        self.logger.debug(u'uploading {}'.format(src))
-        stat = os.stat(src)
-
-        #Check for existing, matching file
-        existing = self.verify_upload(src, drive_id, parent, fname)
-        if existing:
-            return existing
-
-        # The documentation says 4 MB; they might actually mean MiB but eh.
-        if stat.st_size < 4 * 1000 * 1000:
-            with open(src, 'rb') as f:
-                result = self.msgraph.put(u'drives/{}/items/{}:/{}:/content'.format(drive_id, parent, fname), data=f)
-            result.raise_for_status()
-            return result.json()
-
-        payload = {
-            'item': {
-                '@microsoft.graph.conflictBehavior': 'replace',
-                'name': fname,
-                # FIXME: returns 400. Why?
-#                'fileSystemInfo': {
-#                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
-#                },
-            },
-        }
-
-        upload_req = self.msgraph.post(u'drives/{}/items/{}:/{}:/createUploadSession'.format(drive_id, parent, fname), json=payload)
-        upload_req.raise_for_status()
-
-        upload = upload_req.json()
-        upload_url = upload['uploadUrl']
-
-        start = 0
-        result = None
-
-        while not result:
-            remaining = stat.st_size - start
-            if remaining > chunk_size:
-                end = start + chunk_size - 1
-                size = chunk_size
-            else:
-                end = stat.st_size - 1
-                size = stat.st_size - start
-
-            self.logger.debug('uploading bytes {}-{}/{}'.format(start, end, stat.st_size))
-
-            data = ChunkyFile(src, start, size)
-            result = self.msgraph.put(
-                upload_url,
-                data = data,
-                headers = {
-                    'Content-Length': str(size),
-                    'Content-Range': 'bytes {}-{}/{}'.format(start, end, stat.st_size),
-                },
-                timeout = self.config.get('timeout', 60) * 20,
-            )
-            if result.status_code == 404:
-                self.logger.info('Invalid upload session')
-                # FIXME: retry
-                return None
-            result.raise_for_status()
-            if result.status_code == 202:
-                start = int(result.json()['nextExpectedRanges'][0].split('-')[0])
-                result = None
-
-        return result.json()
 
     def list_notebooks(self, user):
         notebooks = self.get_list('users/{}@{}/onenote/notebooks?expand=sections'.format(user, self.config['domain']))
