@@ -12,30 +12,25 @@ import sys
 from requests.exceptions import HTTPError
 
 import odm.cli
+import odm.ms365
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['user', 'action', '--incremental'])
     client = cli.client
 
+    user = odm.ms365.User(cli.client, '{}@{}'.format(cli.args.user, cli.config['domain']))
+
     if cli.args.action == 'show':
-        user = client.show_user(cli.args.user)
-        if user:
-            print(json.dumps(user, indent = 2))
-        else:
-            cli.logger.critical(u'User %s not found', cli.args.user)
-            sys.exit(1)
+        print(json.dumps(user.show(), indent = 2))
 
     elif cli.args.action == 'list-drives':
-        drives = client.list_drives(cli.args.user)
-        print(json.dumps(drives, indent = 2))
+        print(json.dumps(user.list_drives(), indent = 2))
 
     elif cli.args.action == 'list-items':
-        if not client.show_user(cli.args.user):
+        if not user.show():
             cli.logger.critical(u'User %s not found', cli.args.user)
             sys.exit(1)
-
-        drives = client.list_drives(cli.args.user)
 
         base = {
             'items': {},
@@ -45,9 +40,7 @@ def main():
             with open(cli.args.incremental, 'rb') as f:
                 base = json.load(f)
 
-        for d in drives:
-            if d['name'] == 'OneDrive':
-                client.delta_items(d['id'], base)
+        user.drive.delta(base)
 
         print(json.dumps(base, indent = 2))
 

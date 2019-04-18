@@ -48,7 +48,7 @@ def main():
             upload_path = None
 
             if upload_user:
-                upload_container = odm.ms365.User(client, upload_user)
+                upload_container = odm.ms365.User(client, '{}@{}'.format(upload_user, cli.config['domain']))
 
             elif upload_group:
                 upload_container = odm.ms365.Group(client, upload_group)
@@ -176,15 +176,9 @@ def main():
                             step['upload_id'] = 'skip'
                             continue
 
-                        result = client.create_notebook(
-                            upload_user,
-                            upload_drive,
-                            parent['upload_id'],
-                            step['name'],
-                        )
-                        if result:
-                            step['upload_id'] = result['id']
-                        else:
+                        try:
+                            step['upload_id'] = parent['upload_id'].create_notebook(step['name'], upload_container)
+                        except TypeError:
                             step['upload_id'] = 'skip'
                             cli.logger.error(u'Failed to create notebook %s', step_path)
                             retval = 1
@@ -195,14 +189,16 @@ def main():
                         except TypeError:
                             step['upload_id'] = 'skip'
                             cli.logger.error(u'Failed to create folder %s', step_path)
+                            retval = 1
+
                     else:
-                        result = parent['upload_id'].upload_file(dest, step['name'])
-                        if result:
-                            step['upload_id'] = result['id']
-                        else:
+                        step['upload_id'] = parent['upload_id'].upload_file(dest, step['name'])
+                        if not step['upload_id']:
                             step['upload_id'] = 'failed'
                             cli.logger.error(u'Failed to upload %s', step_path)
 
+                    # FIXME: can folders have custom permissions?
+                    # FIXME: what should we do about missing users?
                     if 'upload_id' in step and 'permissions' in step:
                         for perm in step['permissions']:
                             if 'link' in perm:
@@ -218,9 +214,7 @@ def main():
                                 domain = domain_map[domain]
 
                             cli.logger.info(u'Applying permissions')
-                            client.share_file(
-                                upload_drive,
-                                step['upload_id'],
+                            step['upload_id'].share(
                                 '{}@{}'.format(user, domain),
                                 perm['roles'],
                             )

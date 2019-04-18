@@ -100,17 +100,6 @@ class OneDriveClient:
             return users['value']
         return []
 
-    def show_user(self, user):
-        return self.get_list('users/{}@{}'.format(user, self.config['domain']))
-
-    def list_drives(self, owner_id, ns='users'):
-        drives = self.get_list('{}/{}@{}/drives'.format(ns, owner_id, self.config['domain']))
-        if drives:
-            for d in drives['value']:
-                d['root'] = self.get_list('drives/{}/root'.format(d['id']))
-            return drives['value']
-        return []
-
     def show_site(self, site):
         ret = self.msgraph.get('sites/{}?expand=sites,drives,lists'.format(site)).json()
         for d in ret['drives']:
@@ -120,130 +109,8 @@ class OneDriveClient:
     def list_sites(self):
         return self.get_list('sites?search=')['value']
 
-    def create_notebook(self, user, drive_id, parent, name):
-        children = self.get_list('drives/{}/items/{}/children'.format(drive_id, parent))['value']
-        for child in children:
-            if child['name'] == name:
-                if 'package' not in child or child['package']['type'] != 'oneNote':
-                    self.logger.warning(u'{} already exists but is not a OneNote package'.format(name))
-                    return None
-                return child
-
-        # Avoid name collisions within the fixed target folder
-        tmp_name = 'odmtmp_' + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
-
-        payload = {
-            'displayName': tmp_name,
-        }
-        result = self.msgraph.post(
-            'users/{}@{}/onenote/notebooks'.format(user, self.config['domain']),
-            json = payload,
-        )
-        result.raise_for_status()
-
-        result = None
-
-        # Find the OneDrive ID. I hate this.
-        notebooks = self.get_list('drives/{}/root:/Notebooks:/children?select=id,name'.format(drive_id))['value']
-        for item in notebooks:
-            if item['name'] == tmp_name:
-                result = self.move_item(drive_id, item['id'], parent, name)
-
-        if result:
-            return result.json()
-
-        return None
-
-    def move_item(self, drive_id, item_id, parent, name):
-        payload = {
-            'parentReference': {
-                'id': parent,
-            },
-            'name': name,
-        }
-
-        result = None
-
-        result = self.msgraph.patch(
-            'drives/{}/items/{}'.format(drive_id, item_id),
-            json = payload,
-        )
-        result.raise_for_status()
-
-        return result
-
     def list_folder(self, drive_id, folder):
         return self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware,lastModifiedDateTime'.format(drive_id, folder))['value']
-
-    def delta_items(self, drive_id, base):
-        include_delta = False
-
-        path = 'drives/{}/root/delta?select=deleted,file,fileSystemInfo,folder,id,malware,name,package,parentReference,size'.format(drive_id)
-
-        token = base.get('token')
-        if token:
-            include_delta = True
-            # FIXME: need to deal with expired tokens
-            path += '&token={}'.format(token)
-
-        result = self.get_list(path)
-
-        base['token'] = result['@odata.deltaLink'].split('=')[-1]
-
-        delta = {
-            'deleted': [],
-            'changed': [],
-        }
-
-        while len(result['value']):
-            item = result['value'].pop(0)
-            old = base['items'].pop(item['id'], None)
-            if 'deleted' in item:
-                # Save the whole old item, since we don't want to pollute
-                # `items` with deleted things.
-                if old:
-                    delta['deleted'].append(old)
-
-            else:
-                item.update(
-                    self.msgraph.get(
-                    'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
-                    ).json()
-                )
-
-                # Don't record inherited permissions
-                perms = item.pop('permissions', None)
-                if perms and 'inheritedFrom' not in perms[0]:
-                    item['permissions'] = perms
-
-                # Remove unused odata information
-                for key in list(item):
-                    if '@odata' in key:
-                        item.pop(key, None)
-
-                if old:
-                    # Drop information about previous renames
-                    old.pop('oldName', None)
-
-                    # Save the old name if it's different
-                    if old['name'] != item['name']:
-                        old['oldName'] = old['name']
-
-                    old.update(item)
-
-                    # Only need to save the ID here, everything else should be
-                    # determinable from the main entry.
-                    delta['changed'].append(old['id'])
-
-                    base['items'][item['id']] = old
-
-                else:
-                    base['items'][item['id']] = item
-
-        if include_delta:
-            base['delta'] = delta
-
-        return base
 
     def expand_path(self, item_id, items, fs_safe = False):
         path = []
@@ -342,24 +209,6 @@ class OneDriveClient:
                     s['pages'] = self.get_list(s['pagesUrl'])['value']
             return notebooks['value']
         return []
-
-    def share_file(self, drive_id, item_id, user, roles):
-        payload = {
-            'sendInvitation': False,
-            'requireSignIn': True,
-            # FIXME: Why can't we set owner via the API?
-            'roles': ['write' if x == 'owner' else x for x in roles],
-            'recipients': [
-                {
-                    'email': user,
-                },
-            ],
-        }
-
-        result = self.msgraph.post('drives/{}/items/{}/invite'.format(drive_id, item_id), json=payload)
-        result.raise_for_status()
-
-        return result.json()
 
     def _convert_page(self, page_url, page_name, dest, quirky):
         if not os.path.exists(dest + '/data'):
