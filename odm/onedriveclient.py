@@ -91,7 +91,6 @@ class OneDriveClient:
                     path = decoded['@odata.nextLink']
                     page_result = None
 
-
         return result
 
     def list_users(self):
@@ -100,17 +99,8 @@ class OneDriveClient:
             return users['value']
         return []
 
-    def show_site(self, site):
-        ret = self.msgraph.get('sites/{}?expand=sites,drives,lists'.format(site)).json()
-        for d in ret['drives']:
-            d['root'] = self.msgraph.get('drives/{}/root'.format(d['id'])).json()
-        return ret
-
     def list_sites(self):
         return self.get_list('sites?search=')['value']
-
-    def list_folder(self, drive_id, folder):
-        return self.get_list('drives/{}/items/{}/children?select=file,folder,id,name,package,parentReference,remoteItem,size,fileSystemInfo,malware,lastModifiedDateTime'.format(drive_id, folder))['value']
 
     def expand_path(self, item_id, items, fs_safe = False):
         path = []

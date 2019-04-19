@@ -12,41 +12,33 @@ import sys
 from requests.exceptions import HTTPError
 
 import odm.cli
+import odm.ms365
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['site', 'action', '--incremental'])
     client = cli.client
 
+    site = odm.ms365.Site(client, cli.args.site)
+
     if cli.args.action == 'show':
-        site = client.show_site(cli.args.site)
-        if site:
-            print(json.dumps(site, indent = 2))
+        result = site.show()
+        if result:
+            print(json.dumps(result, indent = 2))
         else:
             print('Site {} not found'.format(cli.args.site), file = sys.stderr)
             sys.exit(1)
 
     elif cli.args.action == 'list-items':
-        site = client.show_site(cli.args.site)
-        if not site:
-            print('Site {} not found'.format(cli.args.site), file = sys.stderr)
-            sys.exit(1)
-
-        items = []
-        if len(site['drives']) > 1:
-            print('Multi-drive sites are not supported', file = sys.stderr)
-            sys.exit(1)
-
         base = {
             'items': {},
         }
 
-        if site['drives']:
-            if cli.args.incremental:
-                with open(cli.args.incremental, 'rb') as f:
-                    base = json.load(f)
+        if cli.args.incremental:
+            with open(cli.args.incremental, 'rb') as f:
+                base = json.load(f)
 
-            client.delta_items(site['drives'][0]['id'], base)
+        site.drive.delta(base)
 
         print(json.dumps(base, indent = 2))
 

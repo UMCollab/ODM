@@ -20,13 +20,38 @@ class Container(object):
         self.name = name
         self.client = client
         self.logger = logging.getLogger(__name__)
+        self.raw = None
         self._drive = None
 
     def show(self):
-        return self.client.get_list('{}/{}'.format(self._prefix, self.name))
+        if self._id:
+            result = self.client.get_list('{}/{}'.format(self._prefix, self._id))
+            if self.raw:
+                self.raw.update(result)
+            else:
+                self.raw = result
+            return self.raw
+        else:
+            return {}
 
     def list_drives(self):
         return self.client.get_list('{}/{}/drives'.format(self._prefix, self._id))['value']
+
+    @property
+    def drive(self):
+        if self._drive is None:
+            drives = self.list_drives()
+
+            obj = {}
+            if drives:
+                obj = drives[0]
+
+                if len(drives) > 1:
+                    self.logger.warning(u'Multiple drives found for %s, using the first one', self.name)
+
+            self._drive = Drive(self.client, obj)
+
+        return self._drive
 
     def create_notebook(self, name):
         payload = {
@@ -52,35 +77,47 @@ class Group(Container):
     def __init__(self, client, name):
         super(Group, self).__init__(client, name)
         self._prefix = 'groups'
+        self._members = None
+        self._owners = None
+        self._site = None
 
         # The mail attribute probably uses the tenant name instead of the
         # friendly domain.
-        self.raw = self.client.msgraph.get(
-            "/groups?$filter=startswith(mail, '{}@')".format(
+        search = self.client.get_list(
+            "groups?$filter=startswith(mail, '{}@')".format(
                 name.split('@')[0]
             )
-        ).json()['value'][0]
+        )['value']
 
-        self._id = self.raw['id']
+        if len(search) == 0:
+            self.raw = {}
+            self._id = None
+        else:
+            if len(search) > 1:
+                self.logger.warning(u'Muliple groups found for %s, using the first one', name)
+            self.raw = search[0]
+            self._id = self.raw['id']
 
     def __str__(self):
         return 'group {}'.format(self.name)
 
     @property
-    def drive(self):
-        if self._drive is None:
-            drives = self.list_drives()
+    def members(self):
+        if self._members is None:
+            self._members = self.client.get_list('groups/{}/members'.format(self._id))['value']
+        return self._members
 
-            obj = {}
-            if drives:
-                obj = drives[0]
+    @property
+    def owners(self):
+        if self._owners is None:
+            self._owners = self.client.get_list('groups/{}/owners'.format(self._id))['value']
+        return self._owners
 
-                if len(drives) > 1:
-                    self.logger.warning(u'Multiple drives found for %s, using the first one', self.name)
-
-            self._drive = Drive(self.client, obj)
-
-        return self._drive
+    @property
+    def site(self):
+        if self._site is None:
+            self._site = self.client.get_list('groups/{}/sites/root'.format(self._id))
+        return self._site
 
 
 class User(Container):
@@ -106,6 +143,11 @@ class User(Container):
 
         return self._drive
 
+class Site(Container):
+    def __init__(self, client, name):
+        super(Site, self).__init__(client, name)
+        self._prefix = 'sites'
+        self._id = name
 
 class Drive(object):
     def __init__(self, client, raw):
