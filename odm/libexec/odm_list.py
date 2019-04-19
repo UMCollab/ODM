@@ -35,14 +35,14 @@ def main():
         for book in metadata['notebooks']:
             client.convert_notebook(book, destdir)
 
-    elif cli.args.action in ('download', 'download-estimate', 'list-filenames', 'verify', 'upload'):
+    elif cli.args.action in ('download', 'download-estimate', 'list-filenames', 'upload', 'verify', 'verify-upload'):
         exclude = []
         if cli.args.exclude:
             with open(cli.args.exclude, 'rb') as f:
                 exclude = [e.rstrip() for e in list(f)]
 
         domain_map = {}
-        if cli.args.action == 'upload':
+        if cli.args.action in ('upload', 'verify-upload'):
             upload_user = cli.args.upload_user
             upload_group = cli.args.upload_group
             upload_path = None
@@ -66,7 +66,12 @@ def main():
 
             if cli.args.upload_path:
                 for tok in cli.args.upload_path.split('/'):
-                    upload_path = upload_path.create_folder(tok)
+                    if upload_path:
+                        upload_path = upload_path.get_folder(tok, cli.args.action == 'upload')
+
+            if cli.args.action == 'verify-upload' and not upload_path:
+                cli.logger.critical(u'Failed to verify destination folder')
+                sys.exit(1)
 
             if cli.args.domain_map:
                 for mapping in cli.args.domain_map.lower().split(','):
@@ -151,7 +156,7 @@ def main():
                     cli.logger.warning(u'Failed to verify %s', dest)
                     retval = 1
 
-            elif cli.args.action == 'upload':
+            elif cli.args.action in ('upload', 'verify-upload'):
                 steps = []
                 # Find parents by tracing up through references
                 cur = item
@@ -164,11 +169,17 @@ def main():
                         cur = metadata['items'][cur['parentReference']['id']]
 
                 for step in steps:
+                    leaf = False
                     step_path = client.expand_path(step['id'], metadata['items'])
                     parent = metadata['items'][step['parentReference']['id']]
                     if parent['upload_id'] == 'skip':
                         cli.logger.debug(u'Skipping descendant %s', step_path)
                         step['upload_id'] = 'skip'
+                        continue
+
+                    if parent['upload_id'] == 'failed':
+                        cli.logger.info(u'Failed to verify %s: parent does not exist', step_path)
+                        step['upload_id'] = 'failed'
                         continue
 
                     if 'package' in step:
@@ -178,28 +189,51 @@ def main():
                             continue
 
                         try:
-                            step['upload_id'] = parent['upload_id'].create_notebook(step['name'], upload_container)
+                            step['upload_id'] = parent['upload_id'].get_notebook(step['name'], upload_container, cli.args.action == 'upload')
                         except TypeError:
                             step['upload_id'] = 'skip'
                             cli.logger.error(u'Failed to create notebook %s', step_path)
                             retval = 1
+                            continue
+
+                        if cli.args.action == 'verify-upload' and not step['upload_id']:
+                            step['upload_id'] = 'failed'
+                            retval = 1
+                            continue
 
                     elif 'folder' in step:
                         try:
-                            step['upload_id'] = parent['upload_id'].create_folder(step['name'])
+                            step['upload_id'] = parent['upload_id'].get_folder(step['name'], cli.args.action == 'upload')
                         except TypeError:
                             step['upload_id'] = 'skip'
                             cli.logger.error(u'Failed to create folder %s', step_path)
                             retval = 1
+                            continue
+
+                        if cli.args.action == 'verify-upload' and not step['upload_id']:
+                            step['upload_id'] = 'failed'
+                            continue
 
                     else:
-                        step['upload_id'] = parent['upload_id'].upload_file(dest, step['name'])
-                        if not step['upload_id']:
-                            step['upload_id'] = 'failed'
-                            cli.logger.error(u'Failed to upload %s', step_path)
+                        leaf = True
+                        if cli.args.action == 'upload':
+                            step['upload_id'] = parent['upload_id'].upload_file(dest, step['name'])
+                            if not step['upload_id']:
+                                step['upload_id'] = 'failed'
+                                cli.logger.error(u'Failed to upload %s', step_path)
+                                retval = 1
+                                continue
+                        else:
+                            if parent['upload_id'].verify_file(dest, step['name']):
+                                cli.logger.info(u'Verified %s', step_path)
+                            else:
+                                cli.logger.warning(u'Failed to verify %s', step_path)
+                                retval = 1
 
                     # FIXME: what should we do about missing users?
-                    if 'upload_id' in step and 'permissions' in step:
+                    # FIXME: should we check to see if permissions already exist
+                    # FIXME: need a CLI flag to disable permission setting
+                    if cli.args.action == 'upload' and 'upload_id' in step and 'permissions' in step:
                         for perm in step['permissions']:
                             if 'link' in perm:
                                 cli.logger.info(u'Skipping %s scoped shared link', perm['link']['scope'])
@@ -218,6 +252,11 @@ def main():
                                 '{}@{}'.format(user, domain),
                                 perm['roles'],
                             )
+
+                    # Try to keep memory usage under control by pruning leaves
+                    # once they're processed.
+                    if leaf:
+                        step.clear()
 
             elif cli.args.action == 'list-filenames':
                 print(item_path)

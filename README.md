@@ -100,7 +100,7 @@ odm list ezekielh.json clean-filetree --filetree /var/tmp/ezekielh
 ```
 odm list ezekielh.json upload --filetree /var/tmp/ezekielh --upload-user flowerysong
 odm list ezekielh.json upload --filetree /var/tmp/ezekielh --upload-user flowerysong --upload-path 'other users/ezekielh'
-odm filetree /var/tmp/ezekielh upload flowerysong --upload-path 'other users/ezekielh'
+odm filetree /var/tmp/ezekielh upload --upload-user flowerysong --upload-path 'other users/ezekielh'
 ```
 
 ### Convert OneNote notebooks

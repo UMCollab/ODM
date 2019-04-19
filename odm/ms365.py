@@ -40,7 +40,7 @@ class Container(object):
         result.raise_for_status()
 
         # Find the created notebook in OneDrive. I hate this.
-        folder = self.drive.root.create_folder('Notebooks')
+        folder = self.drive.root.get_folder('Notebooks')
         for child in folder.children:
             if child['name'] == name:
                 return Notebook(self.client, child)
@@ -53,8 +53,8 @@ class Group(Container):
         super(Group, self).__init__(client, name)
         self._prefix = 'groups'
 
-        # eq isn't implemented for Azure, and the mail attribute probably uses
-        # the tenant name instead of the friendly domain anyway.
+        # The mail attribute probably uses the tenant name instead of the
+        # friendly domain.
         self.raw = self.client.msgraph.get(
             "/groups?$filter=startswith(mail, '{}@')".format(
                 name.split('@')[0]
@@ -250,13 +250,17 @@ class DriveFolder(DriveItem):
     def children(self):
         return self.client.get_list('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']))['value']
 
-    def create_folder(self, name):
+    def get_folder(self, name, create = True):
         for child in self.children:
-            print(child)
             if child['name'] == name:
                 if 'folder' not in child:
+                    if not create:
+                        return None
                     raise TypeError('{} already exists but is not a folder'.format(name))
                 return DriveFolder(self.client, child)
+
+        if not create:
+            return None
 
         self.logger.debug(u'Creating folder %s', name)
         payload = {
@@ -269,12 +273,17 @@ class DriveFolder(DriveItem):
         result.raise_for_status()
         return DriveFolder(self.client, result.json())
 
-    def create_notebook(self, name, container):
+    def get_notebook(self, name, container, create = True):
         for child in self.children:
             if child['name'] == name:
                 if 'package' not in child or child['package']['type'] != 'oneNote':
+                    if not create:
+                        return None
                     raise TypeError('{} already exists but is not a OneNote package'.format(name))
                 return Notebook(self.client, child)
+
+        if not create:
+            return None
 
         self.logger.debug(u'Creating notebook %s', name)
         # Avoid name collisions in the fixed target folder
