@@ -143,11 +143,20 @@ class User(Container):
 
         return self._drive
 
+
 class Site(Container):
     def __init__(self, client, name):
         super(Site, self).__init__(client, name)
         self._prefix = 'sites'
         self._id = name
+        self._lists = None
+
+    @property
+    def lists(self):
+        if self._lists is None:
+            self._lists = self.client.get_list('sites/{}/lists'.format(self._id))['value']
+        return self._lists
+
 
 class Drive(object):
     def __init__(self, client, raw):
