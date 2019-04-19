@@ -51,7 +51,7 @@ def main():
                 upload_container = odm.ms365.User(client, '{}@{}'.format(upload_user, cli.config['domain']))
 
             elif upload_group:
-                upload_container = odm.ms365.Group(client, upload_group)
+                upload_container = odm.ms365.Group(client, '{}@{}'.format(upload_group, cli.config['domain']))
 
             else:
                 cli.logger.critical(u'No upload destination specified')
@@ -61,6 +61,7 @@ def main():
             if not upload_drive:
                 cli.logger.critical(u'Unable to find destination drive for %s', upload_container)
                 sys.exit(1)
+
             upload_path = upload_drive.root
 
             if cli.args.upload_path:

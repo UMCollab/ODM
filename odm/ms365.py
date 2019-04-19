@@ -26,7 +26,7 @@ class Container(object):
         return self.client.get_list('{}/{}'.format(self._prefix, self.name))
 
     def list_drives(self):
-        return self.client.get_list('{}/{}/drives'.format(self._prefix, self.name))['value']
+        return self.client.get_list('{}/{}/drives'.format(self._prefix, self._id))['value']
 
     def create_notebook(self, name):
         payload = {
@@ -34,7 +34,7 @@ class Container(object):
         }
 
         result = self.client.msgraph.post(
-            '{}/{}/onenote/notebooks'.format(self._prefix, self.name),
+            '{}/{}/onenote/notebooks'.format(self._prefix, self._id),
             json = payload,
         )
         result.raise_for_status()
@@ -52,6 +52,16 @@ class Group(Container):
     def __init__(self, client, name):
         super(Group, self).__init__(client, name)
         self._prefix = 'groups'
+
+        # eq isn't implemented for Azure, and the mail attribute probably uses
+        # the tenant name instead of the friendly domain anyway.
+        self.raw = self.client.msgraph.get(
+            "/groups?$filter=startswith(mail, '{}@')".format(
+                name.split('@')[0]
+            )
+        ).json()['value'][0]
+
+        self._id = self.raw['id']
 
     def __str__(self):
         return 'group {}'.format(self.name)
@@ -77,6 +87,7 @@ class User(Container):
     def __init__(self, client, name):
         super(User, self).__init__(client, name)
         self._prefix = 'users'
+        self._id = name
 
     def __str__(self):
         return 'user {}'.format(self.name)
