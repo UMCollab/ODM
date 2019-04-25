@@ -217,7 +217,10 @@ def main():
                     else:
                         leaf = True
                         if cli.args.action == 'upload':
-                            step['upload_id'] = parent['upload_id'].upload_file(dest, step['name'])
+                            if step['file']['mimeType'] == 'application/msonenote':
+                                step['upload_id'] = parent['upload_id'].upload_file_sharepoint(dest, step['name'])
+                            else:
+                                step['upload_id'] = parent['upload_id'].upload_file(dest, step['name'])
                             if not step['upload_id']:
                                 step['upload_id'] = 'failed'
                                 cli.logger.error(u'Failed to upload %s', step_path)

@@ -23,6 +23,7 @@ setup(
         'odm.libexec',
     ],
     install_requires = [
+        'adal',
         'beautifulsoup4',
         'google-auth',
         'lxml',

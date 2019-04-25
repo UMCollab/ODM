@@ -23,7 +23,7 @@ import requests_toolbelt
 
 from bs4 import BeautifulSoup
 
-from odm import onedrivesession, inkml, quickxorhash
+from odm import inkml, onedrivesession, quickxorhash, sharepointsession
 from odm.util import ChunkyFile
 
 
@@ -60,6 +60,16 @@ class OneDriveClient:
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.msgraph = onedrivesession.OneDriveSession(self.config.get('domain'), self.config['microsoft'], self.config.get('timeout', 60))
+        self._sharepoint = {}
+
+    def sharepoint(self, site_url):
+        if site_url not in self._sharepoint:
+            self._sharepoint[site_url] = sharepointsession.SharepointSession(
+                site_url,
+                self.config['microsoft'],
+                self.config.get('timeout', 60),
+            )
+        return self._sharepoint[site_url]
 
     def get_list(self, path):
         result = None

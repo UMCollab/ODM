@@ -456,6 +456,25 @@ class DriveFolder(DriveItem):
 
         return DriveItem(self.client, result.json())
 
+    def upload_file_sharepoint(self, src, name):
+        result = self.client.msgraph.get('drives/{}/items/{}?select=sharepointIds'.format(self.raw['parentReference']['driveId'], self.raw['id'])).json()
+        site_url = result['sharepointIds']['siteUrl']
+        client = self.client.sharepoint(
+            site_url[0:site_url.index('/', 9) + 1],
+        )
+        upload_url = "{}/_api/web/lists(guid'{}')/items({})/Folder/Files/Add(url='{}', overwrite=true)".format(
+            site_url,
+            result['sharepointIds']['listId'],
+            result['sharepointIds']['listItemId'],
+            name,
+        )
+
+        with open(src, 'rb') as f:
+            result = client.post(upload_url, data = f, timeout = 1200)
+
+        self.logger.debug(result.text)
+        return result.json()
+
 
 class Notebook(DriveFolder):
     ''' Nothing special at the moment '''
