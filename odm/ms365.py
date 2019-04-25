@@ -35,7 +35,10 @@ class Container(object):
             return {}
 
     def list_drives(self):
-        return self.client.get_list('{}/{}/drives'.format(self._prefix, self._id))['value']
+        result = self.client.get_list('{}/{}/drives'.format(self._prefix, self._id))
+        if result:
+            return result['value']
+        return []
 
     @property
     def drive(self):
