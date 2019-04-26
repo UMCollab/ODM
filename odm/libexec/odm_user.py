@@ -18,8 +18,9 @@ def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['user', 'action', '--incremental'])
     client = cli.client
+    username = client.mangle_user(cli.args.user)
 
-    user = odm.ms365.User(cli.client, '{}@{}'.format(cli.args.user, cli.config['domain']))
+    user = odm.ms365.User(cli.client, username)
 
     if cli.args.action == 'show':
         print(json.dumps(user.show(), indent = 2))
@@ -29,7 +30,7 @@ def main():
 
     elif cli.args.action == 'list-items':
         if not user.show():
-            cli.logger.critical(u'User %s not found', cli.args.user)
+            cli.logger.critical(u'User %s not found', username)
             sys.exit(1)
 
         base = {

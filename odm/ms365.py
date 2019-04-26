@@ -472,7 +472,7 @@ class DriveFolder(DriveItem):
         with open(src, 'rb') as f:
             result = client.post(upload_url, data = f, timeout = 1200)
 
-        self.logger.debug(result.text)
+        result.raise_for_status()
         return result.json()
 
 

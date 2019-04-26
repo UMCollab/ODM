@@ -71,6 +71,13 @@ class OneDriveClient:
             )
         return self._sharepoint[site_url]
 
+    def mangle_user(self, username):
+        if not username:
+            return None
+        if '@' in username:
+            return username
+        return '@'.join((username, self.config['domain']))
+
     def get_list(self, path):
         result = None
         page_result = None

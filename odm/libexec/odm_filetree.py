@@ -28,9 +28,15 @@ def main():
         size = 0
 
         if cli.args.upload_user:
-            container = odm.ms365.User(client, '{}@{}'.format(cli.args.upload_user, cli.config['domain']))
+            container = odm.ms365.User(
+                client,
+                client.mangle_user(cli.args.upload_user),
+            )
         elif cli.args.upload_group:
-            container = odm.ms365.Group(client, '{}@{}'.format(cli.args.upload_group, cli.config['domain']))
+            container = odm.ms365.Group(
+                client,
+                client.mangle_user(cli.args.upload_group),
+            )
         upload_dir = container.drive.root
 
         if cli.args.upload_path:

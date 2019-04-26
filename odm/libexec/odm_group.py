@@ -18,8 +18,9 @@ def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['group', 'action'])
     client = cli.client
+    groupname = client.mangle_user(cli.args.group)
 
-    group = odm.ms365.Group(client, '{}@{}'.format(cli.args.group, cli.config['domain']))
+    group = odm.ms365.Group(client, groupname)
 
     if cli.args.action == 'show':
         info = group.show()
@@ -27,7 +28,7 @@ def main():
             info['site'] = group.site
             print(json.dumps(info, indent = 2))
         else:
-            print(u'Group not found: {}'.format(cli.args.group), file = sys.stderr)
+            print(u'Group not found: {}'.format(groupname), file = sys.stderr)
 
     elif cli.args.action == 'list-members':
         print(json.dumps(group.members, indent = 2))

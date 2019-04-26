@@ -43,15 +43,19 @@ def main():
 
         domain_map = {}
         if cli.args.action in ('upload', 'verify-upload'):
-            upload_user = cli.args.upload_user
-            upload_group = cli.args.upload_group
             upload_path = None
 
-            if upload_user:
-                upload_container = odm.ms365.User(client, '{}@{}'.format(upload_user, cli.config['domain']))
+            if cli.args.upload_user:
+                upload_container = odm.ms365.User(
+                    client,
+                    client.mangle_user(cli.args.upload_user),
+                )
 
-            elif upload_group:
-                upload_container = odm.ms365.Group(client, '{}@{}'.format(upload_group, cli.config['domain']))
+            elif cli.args.upload_group:
+                upload_container = odm.ms365.Group(
+                    client,
+                    client.mangle_user(cli.args.upload_group),
+                )
 
             else:
                 cli.logger.critical(u'No upload destination specified')
