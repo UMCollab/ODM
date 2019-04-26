@@ -36,7 +36,7 @@ account.
     * Under `Certificates & secrets` select `New client secret`; use this as
       the `client_secret` in your ODM config.
     * Create a certificate
-        * `openssl req -x509 -days 3650 -nodes -newkey rsa:2048 -keyout key.pem -out cert.pem -subj '/CN=odm'
+        * `openssl req -x509 -days 3650 -nodes -newkey rsa:2048 -keyout key.pem -out cert.pem -subj '/CN=odm'`
         * Use the contents of key.pem as the `client_cert_key` in your ODM config.
         * Upload the certificate, then use the displayed thumbprint as the `client_cert` in your ODM config.
     * Under `API Permissions` add the necessary application
@@ -45,12 +45,11 @@ account.
         * Files.ReadWrite.All
         * Notes.ReadWrite.All
         * Sites.FullControl.All
-     and the necessary application permissions for Sharepoint:
+    * and the necessary application permissions for Sharepoint:
         * Sites.FullControl.All
     * Grant admin consent for your tenant by clicking on the button.
     * FIXME: should we document getting admin consent for other domains?
 
-    * `openssl req -x509 -days 3650 -nodes -newkey rsa:2048 -keyout key.pem -out cert.pem -subj '/CN=odm'`
 
 ### Google Service Account
 
