@@ -33,6 +33,7 @@ setup(
         'requests',
         'requests_oauthlib',
         'requests_toolbelt',
+        'statsd',
         'svgwrite',
     ],
     entry_points = {

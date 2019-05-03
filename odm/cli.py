@@ -8,11 +8,13 @@ __metaclass__ = type
 
 import argparse
 import logging
+import os
 import sys
 
 import yaml
 
 from kitchen.text.converters import getwriter
+from statsd import StatsClient
 
 from odm import googledriveclient, onedriveclient
 
@@ -52,6 +54,13 @@ class CLI:
         logger.addHandler(handler)
 
         self.logger = logging.getLogger(__name__)
+
+        self.statsd = StatsClient(
+            'localhost',
+            8125,
+            prefix = os.path.basename(sys.argv[0]),
+        )
+        self.statsd.incr('launch')
 
         if client == 'google':
             self.client = googledriveclient.GoogleDriveClient(self.config)

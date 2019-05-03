@@ -102,6 +102,7 @@ def main():
                     continue
 
             cli.logger.debug(u'Working on %s', item_path)
+            cli.statsd.incr(cli.args.action)
 
             if 'malware' in item:
                 cli.logger.info(u'%s is tagged as malware and cannot be processed', item_path)
