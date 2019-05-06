@@ -19,7 +19,7 @@ from statsd import StatsClient
 from odm import googledriveclient, onedriveclient
 
 class CLI:
-    def __init__(self, args, client='microsoft'):
+    def __init__(self, args, flags = [], client = 'microsoft'):
         parser = argparse.ArgumentParser()
         parser.add_argument('-c', '--config',
             help = 'Config file location',
@@ -32,6 +32,9 @@ class CLI:
         )
         for arg in args:
             parser.add_argument(arg)
+
+        for flag in flags:
+            parser.add_argument(flag, action = 'store_true')
 
         self.args = parser.parse_args()
 

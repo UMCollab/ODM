@@ -97,9 +97,44 @@ class Group(Container):
             self._id = None
         else:
             if len(search) > 1:
-                self.logger.warning(u'Muliple groups found for %s, using the first one', name)
+                self.logger.warning(u'Multiple groups found for %s, using the first one', name)
             self.raw = search[0]
             self._id = self.raw['id']
+
+    @classmethod
+    def create(cls, client, name, display_name, private = True, owners = [], members = []):
+	payload = {
+            'mailNickname': name.split('@')[0],
+	    'displayName': display_name,
+	    'mailEnabled': True,
+	    'securityEnabled': False,
+	    'groupTypes': [
+		'Unified',
+	    ],
+	}
+
+        if private:
+            payload['visibility'] = 'Private'
+
+        if owners:
+            payload['owners@odata.bind'] = []
+
+            for owner in owners:
+                user = User(client, client.mangle_user(owner))
+                payload['owners@odata.bind'].append('https://graph.microsoft.com/v1.0/users/{}'.format(user.show()['id']))
+            payload['members@odata.bind'] = list(payload['owners@odata.bind'])
+
+        if members:
+            if 'members@odata.bind' not in payload:
+                payload['members@odata.bind'] = []
+
+            for member in members:
+                user = User(client, client.mangle_user(member))
+                payload['members@odata.bind'].append('https://graph.microsoft.com/v1.0/users/{}'.format(user.show()['id']))
+
+        result = client.msgraph.post('/groups', json = payload)
+        result.raise_for_status()
+        return cls(client, name)
 
     def __str__(self):
         return 'group {}'.format(self.name)
