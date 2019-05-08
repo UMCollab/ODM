@@ -68,6 +68,16 @@ def main():
 
         print(json.dumps(base, indent = 2))
 
+    elif cli.args.action == 'teamify':
+        if not group.show():
+            cli.logger.critical(u'Group %s not found', groupname)
+            sys.exit(1)
+
+        if not group.ensure_team():
+            cli.logger.debug(u'Group %s is already a team', groupname)
+        else:
+            print(json.dumps(group.raw['team'], indent = 2))
+
     else:
         print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
         sys.exit(1)

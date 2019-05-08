@@ -100,6 +100,9 @@ class Group(Container):
                 self.logger.warning(u'Multiple groups found for %s, using the first one', name)
             self.raw = search[0]
             self._id = self.raw['id']
+            self.show()
+            if 'Team' in self.raw['resourceProvisioningOptions']:
+                self.raw['team'] = self.client.get_list('teams/{}'.format(self._id))
 
     @classmethod
     def create(cls, client, name, display_name, private = True, owners = [], members = []):
@@ -156,6 +159,26 @@ class Group(Container):
         if self._site is None:
             self._site = self.client.get_list('groups/{}/sites/root'.format(self._id))
         return self._site
+
+    def ensure_team(self):
+        if 'Team' in self.raw['resourceProvisioningOptions']:
+            # Already a team
+            return False
+
+        payload = {
+            'guestSettings': {
+                'allowCreateUpdateChannels': False,
+                'allowDeleteChannels': False,
+            }
+        }
+        result = self.client.msgraph.put(
+            'groups/{}/team'.format(self._id),
+            json = payload,
+        )
+        self.logger.debug(result.json())
+        result.raise_for_status()
+        self.raw['team'] = result.json()
+        return True
 
 
 class User(Container):
