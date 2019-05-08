@@ -83,6 +83,7 @@ class Group(Container):
         self._members = None
         self._owners = None
         self._site = None
+        self._channels = None
 
         # The mail attribute probably uses the tenant name instead of the
         # friendly domain.
@@ -160,6 +161,23 @@ class Group(Container):
             self._site = self.client.get_list('groups/{}/sites/root'.format(self._id))
         return self._site
 
+    @property
+    def channels(self):
+        if self._channels is None:
+            self._channels = self.client.get_list('teams/{}/channels'.format(self._id))['value']
+        return self._channels
+
+    def create_channel(self, name):
+        payload = {
+            'displayName': name,
+        }
+        result = self.client.msgraph.post(
+            'teams/{}/channels'.format(self._id),
+            json = payload,
+        )
+        result.raise_for_status()
+        return result.json()
+
     def ensure_team(self):
         if 'Team' in self.raw['resourceProvisioningOptions']:
             # Already a team
@@ -175,7 +193,6 @@ class Group(Container):
             'groups/{}/team'.format(self._id),
             json = payload,
         )
-        self.logger.debug(result.json())
         result.raise_for_status()
         self.raw['team'] = result.json()
         return True

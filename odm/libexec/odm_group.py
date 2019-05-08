@@ -68,6 +68,21 @@ def main():
 
         print(json.dumps(base, indent = 2))
 
+    elif cli.args.action == 'list-channels':
+        print(json.dumps(group.channels, indent = 2 ))
+
+    elif cli.args.action == 'create-channel':
+        if not group.show():
+            cli.logger.critical(u'Group %s not found', groupname)
+            sys.exit(1)
+
+        if not cli.args.display_name:
+            cli.logger.critical(u'--display-name is required for channel creation')
+            sys.exit(1)
+
+        result = group.create_channel(cli.args.display_name)
+        print(json.dumps(result, indent = 2))
+
     elif cli.args.action == 'teamify':
         if not group.show():
             cli.logger.critical(u'Group %s not found', groupname)
