@@ -8,8 +8,9 @@ __metaclass__ = type
 
 import logging
 import os
-import random
 import string
+
+from datetime import datetime
 
 from odm import quickxorhash
 from odm.util import ChunkyFile
@@ -57,6 +58,12 @@ class Container(object):
         return self._drive
 
     def create_notebook(self, name):
+        # Avoid name collisions in the fixed target folder
+        folder = self.drive.root.get_folder('Notebooks')
+        for child in folder.children:
+            if child['name'] == name:
+                name += '_migrated_' + datetime.now().strftime('%Y%m%d_%H_%M')
+
         payload = {
             'displayName': name,
         }
@@ -415,11 +422,10 @@ class DriveFolder(DriveItem):
             return None
 
         self.logger.debug(u'Creating notebook %s', name)
-        # Avoid name collisions in the fixed target folder
-        tmp_name = 'odmtmp_' + ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(10))
 
-        notebook = container.create_notebook(tmp_name)
-        notebook.move(self.raw['id'], name)
+        notebook = container.create_notebook(name)
+        if notebook.raw['parentReference']['id'] != self.raw['id'] or notebook.raw['name'] != name:
+            notebook.move(self.raw['id'], name)
         return notebook
 
     def verify_file(self, src, name):
