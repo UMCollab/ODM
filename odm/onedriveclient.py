@@ -118,6 +118,9 @@ class OneDriveClient:
     def list_sites(self):
         return self.get_list('sites?search=')['value']
 
+    def list_groups(self):
+        return self.get_list('groups')['value']
+
     def expand_path(self, item_id, items, fs_safe = False):
         path = []
 

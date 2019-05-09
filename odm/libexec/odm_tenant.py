@@ -22,6 +22,9 @@ def main():
     elif cli.args.action == 'list-sites':
         print(json.dumps(client.list_sites(), indent = 2))
 
+    elif cli.args.action == 'list-groups':
+        print(json.dumps(client.list_groups(), indent = 2))
+
     else:
         print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
         sys.exit(1)
