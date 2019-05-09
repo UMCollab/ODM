@@ -8,7 +8,6 @@ __metaclass__ = type
 
 import logging
 import os
-import string
 
 from datetime import datetime
 
