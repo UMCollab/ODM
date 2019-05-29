@@ -58,6 +58,8 @@ class CLI:
 
         self.logger = logging.getLogger(__name__)
 
+        self.logger.debug('Using config file %s', self.args.config)
+
         self.statsd = StatsClient(
             'localhost',
             8125,

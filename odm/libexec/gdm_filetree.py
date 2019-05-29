@@ -14,16 +14,16 @@ import odm.cli
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['path', 'action', 'user', '--dest'], 'google')
+    cli = odm.cli.CLI(['path', 'action', '--upload-user', '--upload-path'], client = 'google')
     client = cli.client
     dir_map = {}
 
     ts_start = datetime.datetime.now()
     retval = 0
 
-    dest = cli.args.dest if cli.args.dest else 'Migrated from OneDrive'
+    dest = cli.args.upload_path if cli.args.upload_path else 'Migrated from OneDrive'
 
-    if cli.args.action in ('upload', 'verify'):
+    if cli.args.action in ('upload', 'verify', 'verify-quick'):
         count = 0
         size = 0
 
@@ -49,6 +49,9 @@ def main():
                 else:
                     dir_map[relpath] = None
             for fname in files:
+                if cli.args.action == 'verify-quick' and retval != 0:
+                    sys.exit(retval)
+
                 count += 1
                 fpath = '/'.join((root, fname))
                 stat = os.stat(fpath)

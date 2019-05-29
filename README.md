@@ -58,10 +58,7 @@ account.
 * Inside the project, create a service account.
     * Name the account something meaningful.
     * The account does not require any roles.
-    * Select `Furnish a new private key` and the JSON key type.
-    * Enable `G Suite Domain Wide Delegation`
-    * Creating the account will download a JSON file; use this as the
-      `credentials` in your ODM config.
+    * Select `CREATE KEY` and the JSON key type; use the downloaded file as the `credentials` in your ODM config
 * Inside the project, enable the Google Drive API.
     * Open the navigation menu by clicking the three bars icon at the top left.
     * Click `APIs & Services`
@@ -127,8 +124,8 @@ odm list ezekielh-onenote.json convert-notebooks --filetree '/var/tmp/ezekielh/E
 ## Uploading to Google Drive
 
 ```
-gdm filetree /var/tmp/ezekielh upload ezekielh --dest "Magically Delicious"
-gdm filetree /var/tmp/ezekielh verify ezekielh --dest "Magically Delicious"
+gdm filetree /var/tmp/ezekielh upload --upload-user ezekielh --upload-path "Magically Delicious"
+gdm filetree /var/tmp/ezekielh verify --upload-user ezekielh --upload-path "Magically Delicious"
 ```
 
 ## Known Limitations

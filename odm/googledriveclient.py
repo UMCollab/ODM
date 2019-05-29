@@ -19,15 +19,16 @@ import google.oauth2.service_account
 import google.auth.transport.requests
 
 class GoogleDriveClient:
-    def __init__(self, config, logger):
+    def __init__(self, config):
         self.baseurl = 'https://www.googleapis.com/'
         self.config = config
         self.logger = logging.getLogger(__name__)
 
         cred_kwargs = {
-            'subject': '{}@{}'.format(config['args'].user, config['domain']),
+            'subject': '{}@{}'.format(config['args'].upload_user, config['domain']),
             'scopes': ['https://www.googleapis.com/auth/drive'],
         }
+        self.logger.debug(cred_kwargs)
         if isinstance(config['google']['service_credentials'], dict):
             self.creds = google.oauth2.service_account.Credentials.from_service_account_info(
                 config['google']['service_credentials'],
