@@ -113,15 +113,15 @@ class Group(Container):
 
     @classmethod
     def create(cls, client, name, display_name, private = True, owners = [], members = []):
-	payload = {
+        payload = {
             'mailNickname': name.split('@')[0],
-	    'displayName': display_name,
-	    'mailEnabled': True,
-	    'securityEnabled': False,
-	    'groupTypes': [
-		'Unified',
-	    ],
-	}
+            'displayName': display_name,
+            'mailEnabled': True,
+            'securityEnabled': False,
+            'groupTypes': [
+                'Unified',
+            ],
+        }
 
         if private:
             payload['visibility'] = 'Private'
@@ -288,7 +288,7 @@ class Drive(object):
             else:
                 item.update(
                     self.client.msgraph.get(
-                    'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
+                        'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
                     ).json()
                 )
 
@@ -456,13 +456,13 @@ class DriveFolder(DriveItem):
         return None
 
     def upload_file(self, src, name):
-	# 10 megabytes
+        # 10 megabytes
         chunk_size = 1024 * 1024 * 10
 
         self.logger.debug(u'uploading {}'.format(src))
         stat = os.stat(src)
 
-        #Check for existing, matching file
+        # Check for existing, matching file
         existing = self.verify_file(src, name)
         if existing:
             return DriveItem(self.client, existing)
@@ -487,7 +487,7 @@ class DriveFolder(DriveItem):
             'item': {
                 '@microsoft.graph.conflictBehavior': 'replace',
                 'name': name,
-                # FIXME: returns 400. Why?
+#                # FIXME: returns 400. Why?
 #                'fileSystemInfo': {
 #                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
 #                },
@@ -523,7 +523,7 @@ class DriveFolder(DriveItem):
                     'Content-Length': str(size),
                     'Content-Range': 'bytes {}-{}/{}'.format(start, end, stat.st_size),
                 },
-                timeout = 1200, # FIXME: what should this actually be?
+                timeout = 1200,     # FIXME: what should this actually be?
             )
             if result.status_code == 404:
                 self.logger.info('Invalid upload session')

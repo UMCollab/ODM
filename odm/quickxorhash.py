@@ -12,6 +12,7 @@ import struct
 
 from ctypes import cdll, c_char_p, c_void_p, c_ulonglong
 
+
 class QuickXORHash:
     def __init__(self):
         logger = logging.getLogger(__name__)

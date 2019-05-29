@@ -7,16 +7,8 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import base64
-import json
 import logging
 import os
-import random
-import re
-import string
-import sys
-import time
-
-from datetime import datetime
 
 import requests
 import requests_toolbelt
@@ -24,7 +16,6 @@ import requests_toolbelt
 from bs4 import BeautifulSoup
 
 from odm import inkml, onedrivesession, quickxorhash, sharepointsession
-from odm.util import ChunkyFile
 
 
 KETSUBAN = '''
@@ -54,6 +45,7 @@ kpFBGh2IGZ/LWkPxZCIkkEAiSCARJJBo74l79YQ4Wtbju63PucQHEkgggQQSSFSAZMY29+g8Z+X2
 eyMKEkgggQQSSAQJJFozce8dVLNPXanYfm+dBBJIIBEkkGigUw6Zq/j9FWCNKEgggQQSSCCRJEmS
 JEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSjuo/MassmDD1NGYAAAAASUVORK5CYII=
 '''
+
 
 class OneDriveClient:
     def __init__(self, config):
@@ -86,7 +78,9 @@ class OneDriveClient:
             page_result = self.msgraph.get(path, allow_redirects = False)
 
             if page_result.status_code == 302:
-                return { 'location': page_result.headers['location'] }
+                return {
+                    'location': page_result.headers['location']
+                }
             elif page_result.status_code == 404:
                 return None
             else:
@@ -110,7 +104,9 @@ class OneDriveClient:
         return result
 
     def list_users(self):
-        users = self.get_list('users?$select=id,displayName,givenName,jobTitle,mail,userPrincipalName,accountEnabled,onPremisesImmutableId,onPremisesSyncEnabled')
+        users = self.get_list(
+            'users?$select=id,displayName,givenName,jobTitle,mail,userPrincipalName,accountEnabled,onPremisesImmutableId,onPremisesSyncEnabled'
+        )
         if users:
             return users['value']
         return []

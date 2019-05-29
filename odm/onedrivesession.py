@@ -19,7 +19,7 @@ from statsd import StatsClient
 
 class OneDriveSession(requests_oauthlib.OAuth2Session):
     def __init__(self, domain, ms_config, timeout, **kwargs):
-	self.baseurl = 'https://graph.microsoft.com/v1.0/'
+        self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.logger = logging.getLogger(__name__)
         self.statsd = StatsClient(
             'localhost',
@@ -40,13 +40,15 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
 
     def _fresh_token(self):
         self.logger.debug('Fetching fresh authorization token.')
-	self.fetch_token(
-		token_url = 'https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.domain),
-		client_id = self.ms_config['client_id'],
-		client_secret = self.ms_config['client_secret'],
-                include_client_id = True,
-		scope = [ 'https://graph.microsoft.com/.default' ],
-	)
+        self.fetch_token(
+            token_url = 'https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.domain),
+            client_id = self.ms_config['client_id'],
+            client_secret = self.ms_config['client_secret'],
+            include_client_id = True,
+            scope = [
+                'https://graph.microsoft.com/.default',
+            ],
+        )
 
     def refresh_token(self, token_url, **kwargs):
         self._fresh_token()

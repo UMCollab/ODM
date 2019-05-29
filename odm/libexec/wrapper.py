@@ -9,6 +9,7 @@ __metaclass__ = type
 import os
 import sys
 
+
 def main():
     if len(sys.argv) < 2:
         print('Usage: odm <command> [<args>]', file = sys.stderr)
@@ -33,6 +34,7 @@ def main():
     sys.argv[0] += ' ' + sys.argv[idx]
     del(sys.argv[idx])
     subcommand.main()
+
 
 if __name__ == '__main__':
     main()

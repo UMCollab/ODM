@@ -7,6 +7,7 @@ import svgwrite
 
 from bs4 import BeautifulSoup
 
+
 class InkML:
     def __init__(self, src):
         with open(src, 'r') as f:

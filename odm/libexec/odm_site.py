@@ -9,10 +9,9 @@ __metaclass__ = type
 import json
 import sys
 
-from requests.exceptions import HTTPError
-
 import odm.cli
 import odm.ms365
+
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
@@ -54,6 +53,7 @@ def main():
     else:
         print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()

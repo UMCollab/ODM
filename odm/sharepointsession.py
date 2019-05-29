@@ -13,6 +13,7 @@ import time
 import requests
 import adal
 
+
 class SharepointSession(requests.Session):
     def __init__(self, site_url, ms_config, timeout, **kwargs):
         self.site_url = site_url

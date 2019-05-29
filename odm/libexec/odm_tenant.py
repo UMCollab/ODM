@@ -11,6 +11,7 @@ import sys
 
 import odm.cli
 
+
 def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['action'])
@@ -28,6 +29,7 @@ def main():
     else:
         print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()

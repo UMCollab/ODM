@@ -18,6 +18,7 @@ from hashlib import md5
 import google.oauth2.service_account
 import google.auth.transport.requests
 
+
 class GoogleDriveClient:
     def __init__(self, config):
         self.baseurl = 'https://www.googleapis.com/'
@@ -103,7 +104,9 @@ class GoogleDriveClient:
         if folder:
             payload['mimeType'] = 'application/vnd.google-apps.folder'
         if parent:
-            payload['parents'] = [ parent ]
+            payload['parents'] = [
+                parent,
+            ]
         if mtime:
             payload['modifiedTime'] = mtime
 
@@ -153,7 +156,9 @@ class GoogleDriveClient:
                 'upload/drive/v3/files/{}'.format(
                     existing['id']
                 ),
-                params = {'uploadType': 'resumable' },
+                params = {
+                    'uploadType': 'resumable',
+                },
                 headers = {'X-Upload-Content-Length': str(stat.st_size)},
                 json = {
                     'modifiedTime': mtime,
@@ -169,7 +174,9 @@ class GoogleDriveClient:
                 },
                 json = {
                     'name': name,
-                    'parents': [ parent ],
+                    'parents': [
+                        parent,
+                    ],
                     'modifiedTime': mtime,
                 },
             )
@@ -222,7 +229,7 @@ class GoogleDriveClient:
                     msg = 'HTTP {}'.format(result.status_code)
                 else:
                     msg = 'Error'
-                self.logger.info('{}, sleeping for {} seconds'.format( msg, delay))
+                self.logger.info('{}, sleeping for {} seconds'.format(msg, delay))
                 time.sleep(delay)
                 result = None
             elif result.status_code == 308:

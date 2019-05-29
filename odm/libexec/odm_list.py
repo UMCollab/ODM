@@ -18,6 +18,7 @@ import dateutil.parser
 import odm.cli
 import odm.ms365
 
+
 def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-group', '--upload-path', '--domain-map', '--limit', '--exclude', '--diff', 'file', 'action'])
@@ -79,7 +80,7 @@ def main():
 
             if cli.args.domain_map:
                 for mapping in cli.args.domain_map.lower().split(','):
-                    (src, dst)  = mapping.split(':')
+                    (src, dst) = mapping.split(':')
                     domain_map[src] = dst
 
         size = 0
@@ -296,6 +297,7 @@ def main():
         sys.exit(1)
 
     sys.exit(retval)
+
 
 if __name__ == 'main':
     main()

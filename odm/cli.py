@@ -18,14 +18,17 @@ from statsd import StatsClient
 
 from odm import googledriveclient, onedriveclient
 
+
 class CLI:
     def __init__(self, args, flags = [], client = 'microsoft'):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-c', '--config',
+        parser.add_argument(
+            '-c', '--config',
             help = 'Config file location',
             default = '/etc/odm.yaml',
         )
-        parser.add_argument('-v', '--verbose',
+        parser.add_argument(
+            '-v', '--verbose',
             help = 'Enable verbose output',
             action = 'count',
             default = 0,

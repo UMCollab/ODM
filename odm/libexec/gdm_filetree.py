@@ -12,6 +12,7 @@ import sys
 
 import odm.cli
 
+
 def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['path', 'action', '--upload-user', '--upload-path'], client = 'google')
@@ -93,6 +94,7 @@ def main():
         retval = 1
 
     sys.exit(retval)
+
 
 if __name__ == '__main__':
     main()

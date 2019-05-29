@@ -14,6 +14,7 @@ from requests.exceptions import HTTPError
 import odm.cli
 import odm.ms365
 
+
 def main():
     odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['user', 'action', '--incremental'])
@@ -51,11 +52,12 @@ def main():
             notebooks = client.list_notebooks(cli.args.user)
         except HTTPError:
             notebooks = []
-        print(json.dumps({ 'notebooks': notebooks }, indent = 2))
+        print(json.dumps({'notebooks': notebooks}, indent = 2))
 
     else:
         cli.logger.critical(u'Unsupported action %s', cli.args.action)
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
