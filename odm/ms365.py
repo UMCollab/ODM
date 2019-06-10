@@ -259,6 +259,9 @@ class Drive(object):
     def delta(self, base):
         include_delta = False
 
+        if not self.raw:
+            return {}
+
         path = 'drives/{}/root/delta?select=deleted,file,fileSystemInfo,folder,id,malware,name,package,parentReference,size'.format(self.raw['id'])
 
         token = base.get('token')
