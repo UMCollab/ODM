@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rootdir=${rootdir:-/mnt/magic/master-deprov-list}
+rootdir=${rootdir:-/magic/master-deprov-list}
 
 for uniqname in $(cat $1) ; do
     dirname=${rootdir}/$uniqname
@@ -16,15 +16,11 @@ for uniqname in $(cat $1) ; do
             echo "Fetching metadata for $uniqname"
             odm user $uniqname list-items > $dirname/metadata.json
             [[ -s $dirname/metadata.json ]] || exit
-            if [[ -d $dirname/files ]]; then
-                # Remove non-matching files
-                odm list $dirname/metadata.json clean-filetree --dest $dirname/files -v 2> $dirname/stderr.${startts}.cleanup
-                find $dirname/files -type d -empty -delete
-            fi
             try=0
             retval=1
             until [[ $retval -eq 0 ]] || [[ $try -gt 3 ]]; do
-                odm list $dirname/metadata.json download --dest $dirname/files -v 2> $dirname/stderr.${startts}.download.$try
+                echo "Downloading files for $uniqname (try $try)"
+                odm list $dirname/metadata.json download --filetree $dirname/files -v 2> $dirname/stderr.${startts}.download.$try
                 retval=$?
                 if [[ $try -eq 0 ]] && [[ $retval -ne 0 ]]; then
                     # The API might have lied about the hashes
@@ -36,6 +32,9 @@ for uniqname in $(cat $1) ; do
             if [[ $retval -eq 0 ]]; then
                 echo "Successfully verified $uniqname download"
                 touch $dirname/verified
+                # Clean up any stale files
+                odm list $dirname/metadata.json clean-filetree --filetree $dirname/files -v 2> $dirname/stderr.${startts}.cleanup
+                find $dirname/files -type d -empty -delete
             else
                 echo "Failed to download $uniqname"
                 exit
@@ -43,9 +42,9 @@ for uniqname in $(cat $1) ; do
         fi
 
         echo "Uploading files for $uniqname"
-        gdm filetree $dirname/files upload $uniqname -v 2> $dirname/stderr.${startts}.upload
+        gdm filetree $dirname/files upload --upload-user $uniqname --upload-path "Migrated from OneDrive 2019" -v 2> $dirname/stderr.${startts}.upload
         tail -1 $dirname/stderr.${startts}.upload
-        gdm filetree $dirname/files verify $uniqname -v 2>$dirname/stderr.${startts}.verify
+        gdm filetree $dirname/files verify --upload-user $uniqname --upload-path "Migrated from OneDrive 2019" -v 2> $dirname/stderr.${startts}.verify
         if [[ $? -eq 0 ]]; then
             echo "Successfully verified $uniqname upload"
             touch $dirname/uploaded
