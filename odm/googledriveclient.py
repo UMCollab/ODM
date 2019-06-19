@@ -62,7 +62,7 @@ class GoogleDriveClient:
 
             if result.status_code == 403 and attempt > 3:
                 result.raise_for_status()
-            if result.status_code in [403, 429, 500]:
+            if result.status_code in [403, 429, 500, 503]:
                 result = None
                 attempt += 1
                 # Jittered backoff
