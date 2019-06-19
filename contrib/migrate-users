@@ -41,15 +41,20 @@ for uniqname in $(cat $1) ; do
             fi
         fi
 
-        echo "Uploading files for $uniqname"
-        gdm filetree $dirname/files upload --upload-user $uniqname --upload-path "Migrated from OneDrive 2019" -v 2> $dirname/stderr.${startts}.upload
-        tail -1 $dirname/stderr.${startts}.upload
-        gdm filetree $dirname/files verify --upload-user $uniqname --upload-path "Migrated from OneDrive 2019" -v 2> $dirname/stderr.${startts}.verify
-        if [[ $? -eq 0 ]]; then
-            echo "Successfully verified $uniqname upload"
+        if [[ -d $dirname/files ]]; then
+            echo "Uploading files for $uniqname"
+            gdm filetree $dirname/files upload --upload-user $uniqname --upload-path "Migrated from OneDrive 2019" -v 2> $dirname/stderr.${startts}.upload
+            tail -1 $dirname/stderr.${startts}.upload
+            gdm filetree $dirname/files verify --upload-user $uniqname --upload-path "Migrated from OneDrive 2019" -v 2> $dirname/stderr.${startts}.verify
+            if [[ $? -eq 0 ]]; then
+                echo "Successfully verified $uniqname upload"
+                touch $dirname/uploaded
+            fi
+            tail -1 $dirname/stderr.${startts}.verify
+        else
+            echo "Nothing to upload for $uniqname"
             touch $dirname/uploaded
         fi
-        tail -1 $dirname/stderr.${startts}.verify
     ) 9>>$dirname/lockfile
     if [[ $? -ne 0 ]]; then
         echo "$uniqname already locked"
