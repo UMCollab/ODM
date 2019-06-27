@@ -11,6 +11,11 @@ import os
 
 from datetime import datetime
 
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
+
 from odm import quickxorhash
 from odm.util import ChunkyFile
 
@@ -473,7 +478,7 @@ class DriveFolder(DriveItem):
         base_url = u'drives/{}/items/{}:/{}:/'.format(
             self.raw['parentReference']['driveId'],
             self.raw['id'],
-            name,
+            quote(name.encode('utf-8')),
         )
 
         # The documentation says 4 MB; they might actually mean MiB but eh.
@@ -549,7 +554,7 @@ class DriveFolder(DriveItem):
             site_url,
             result['sharepointIds']['listId'],
             result['sharepointIds']['listItemId'],
-            name,
+            quote(name.replace("'", "''").encode('utf-8')),
         )
 
         with open(src, 'rb') as f:
