@@ -549,7 +549,10 @@ class DriveFolder(DriveItem):
         # 10 megabytes
         chunk_size = 1024 * 1024 * 10
 
-        result = self.client.msgraph.get('drives/{}/items/{}?select=sharepointIds'.format(self.raw['parentReference']['driveId'], self.raw['id'])).json()
+        result = self.client.msgraph.get('drives/{}/items/{}?select=sharepointIds'.format(self.raw['parentReference']['driveId'], self.raw['id']))
+        result.raise_for_status()
+        result = result.json()
+
         site_url = result['sharepointIds']['siteUrl']
         client = self.client.sharepoint(
             site_url[0:site_url.index('/', 9) + 1],
