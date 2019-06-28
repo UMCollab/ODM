@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import logging
 import os
+import uuid
 
 from datetime import datetime
 
@@ -545,6 +546,9 @@ class DriveFolder(DriveItem):
         return DriveItem(self.client, result.json())
 
     def upload_file_sharepoint(self, src, name):
+        # 10 megabytes
+        chunk_size = 1024 * 1024 * 10
+
         result = self.client.msgraph.get('drives/{}/items/{}?select=sharepointIds'.format(self.raw['parentReference']['driveId'], self.raw['id'])).json()
         site_url = result['sharepointIds']['siteUrl']
         client = self.client.sharepoint(
@@ -557,10 +561,59 @@ class DriveFolder(DriveItem):
             quote(name.replace("'", "''").encode('utf-8')),
         )
 
-        with open(src, 'rb') as f:
-            result = client.post(upload_url, data = f, timeout = 1200)
+        stat = os.stat(src)
 
+        # In this case the limit is actually MiB, but it's on the request so
+        # we want to leave a bit of breathing room.
+        if stat.st_size < 250 * 1000 * 1000:
+            with open(src, 'rb') as f:
+                result = client.post(upload_url, data = f, timeout = 1200)
+
+            result.raise_for_status()
+            return result.json()
+
+        # Create temporary empty file to target with the multi-part upload
+        result = client.post(upload_url)
         result.raise_for_status()
+        upload_url = result.json()['d']['__metadata']['uri']
+
+        result = None
+        guid = uuid.uuid4()
+        start = 0
+
+        while not result:
+            remaining = stat.st_size - start
+            if remaining > chunk_size:
+                end = start + chunk_size - 1
+                size = chunk_size
+            else:
+                end = stat.st_size - 1
+                size = stat.st_size - start
+
+            self.logger.debug('uploading bytes {}-{}/{}'.format(start, end, stat.st_size))
+
+            data = ChunkyFile(src, start, size)
+
+            if start == 0:
+                url = "{}/StartUpload(uploadId=guid'{}')".format(upload_url, guid)
+            elif remaining > chunk_size:
+                url = "{}/ContinueUpload(uploadId=guid'{}', fileOffset={})".format(
+                    upload_url, guid, start
+                )
+            else:
+                url = "{}/FinishUpload(uploadId=guid'{}', fileOffset={})".format(
+                    upload_url, guid, start
+                )
+            result = client.post(url, data = data, timeout = 1200)
+            result.raise_for_status()
+
+            if remaining > chunk_size:
+                if start == 0:
+                    start = int(result.json()['d']['StartUpload'])
+                else:
+                    start = int(result.json()['d']['ContinueUpload'])
+                result = None
+
         return result.json()
 
 
