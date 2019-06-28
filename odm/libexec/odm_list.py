@@ -252,6 +252,10 @@ def main():
                                 cli.logger.debug(u'Skipping owner permission')
                                 continue
 
+                            if 'email' not in perm['grantedTo']['user']:
+                                cli.logger.info(u'Skipping permission with no email: %s', perm['grantedTo']['user'].get('displayName'))
+                                continue
+
                             (user, domain) = perm['grantedTo']['user']['email'].split('@')
                             if domain in domain_map:
                                 domain = domain_map[domain]
