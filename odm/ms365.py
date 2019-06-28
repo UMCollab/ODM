@@ -423,7 +423,7 @@ class DriveFolder(DriveItem):
                 if 'package' not in child or child['package']['type'] != 'oneNote':
                     if not create:
                         return None
-                    raise TypeError('{} already exists but is not a OneNote package'.format(name))
+                    raise TypeError(u'{} already exists but is not a OneNote package'.format(name))
                 return Notebook(self.client, child)
 
         if not create:
