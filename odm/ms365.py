@@ -17,6 +17,8 @@ try:
 except ImportError:
     from urllib import quote
 
+from requests.exceptions import HTTPError
+
 from odm import quickxorhash
 from odm.util import ChunkyFile
 
@@ -62,13 +64,14 @@ class Container(object):
 
         return self._drive
 
-    def create_notebook(self, name):
-        # Avoid name collisions in the fixed target folder
+    def _find_notebook(self, name):
+        # Find the created notebook in OneDrive. I hate this.
         folder = self.drive.root.get_folder('Notebooks')
         for child in folder.children:
             if child['name'] == name:
-                name += '_migrated_' + datetime.now().strftime('%Y%m%d_%H_%M')
+                return Notebook(self.client, child)
 
+    def _create_notebook(self, name):
         payload = {
             'displayName': name,
         }
@@ -77,13 +80,33 @@ class Container(object):
             '{}/{}/onenote/notebooks'.format(self._prefix, self._id),
             json = payload,
         )
+
+        if result.status_code == 409:
+            # The API might have returned a transient error, but created the
+            # notebook anyway; the retry then returns a 409.
+            notebook = self._find_notebook(name)
+            if notebook:
+                return notebook
+
         result.raise_for_status()
 
-        # Find the created notebook in OneDrive. I hate this.
-        folder = self.drive.root.get_folder('Notebooks')
-        for child in folder.children:
-            if child['name'] == name:
-                return Notebook(self.client, child)
+        return self._find_notebook(name)
+
+    def create_notebook(self, name):
+        notebook = None
+
+        try:
+            notebook = self._create_notebook(name)
+        except HTTPError as e:
+            if e.response.status_code == 409:
+                # Retry with a unique name
+                name += '_migrated_' + datetime.now().strftime('%Y%m%d_%H_%M')
+                notebook = self._create_notebook(name)
+            else:
+                raise
+
+        if notebook:
+            return notebook
 
         raise RuntimeError('Failed to find created notebook {}'.format(name))
 
