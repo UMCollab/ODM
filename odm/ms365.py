@@ -557,10 +557,26 @@ class DriveFolder(DriveItem):
         client = self.client.sharepoint(
             site_url[0:site_url.index('/', 9) + 1],
         )
-        upload_url = "{}/_api/web/lists(guid'{}')/items({})/Folder/Files/Add(url='{}', overwrite=true)".format(
-            site_url,
-            result['sharepointIds']['listId'],
-            result['sharepointIds']['listItemId'],
+
+        if 'listItemId' not in result['sharepointIds']:
+            # The root folder isn't actually a list item, so it doesn't have
+            # a list item id.
+
+            # fence in case I'm incorrect about why this happens
+            assert self.raw['name'] == 'root'
+
+            upload_url = "{}/_api/web/lists(guid'{}')/RootFolder".format(
+                site_url,
+                result['sharepointIds']['listId'],
+            )
+        else:
+            upload_url = "{}/_api/web/lists(guid'{}')/items({})/Folder".format(
+                site_url,
+                result['sharepointIds']['listId'],
+                result['sharepointIds']['listItemId'],
+            )
+
+        upload_url += "/Files/Add(url='{}', overwrite=true)".format(
             quote(name.replace("'", "''").encode('utf-8')),
         )
 
