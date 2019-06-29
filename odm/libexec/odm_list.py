@@ -260,11 +260,15 @@ def main():
                             if domain in domain_map:
                                 domain = domain_map[domain]
 
-                            cli.logger.info(u'Applying permissions')
-                            step['upload_id'].share(
-                                '{}@{}'.format(user, domain),
-                                perm['roles'],
-                            )
+                            try:
+                                cli.logger.info(u'Applying permissions for %s', user)
+                                step['upload_id'].share(
+                                    '{}@{}'.format(user, domain),
+                                    perm['roles'],
+                                )
+                            except AttributeError:
+                                # FIXME: It would be better to implement this
+                                cli.logger.info(u'Skipping permission on file uploaded via SharePoint')
 
                     # Try to keep memory usage under control by pruning leaves
                     # once they're processed.
