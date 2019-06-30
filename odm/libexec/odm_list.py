@@ -36,14 +36,14 @@ def main():
         for book in metadata['notebooks']:
             client.convert_notebook(book, destdir)
 
-    elif cli.args.action in ('download', 'download-estimate', 'list-filenames', 'upload', 'verify', 'verify-upload'):
+    elif cli.args.action in ('download', 'download-estimate', 'list-filenames', 'upload', 'verify', 'verify-upload', 'apply-permissions'):
         exclude = []
         if cli.args.exclude:
             with open(cli.args.exclude, 'rb') as f:
                 exclude = [e.rstrip() for e in list(f)]
 
         domain_map = {}
-        if cli.args.action in ('upload', 'verify-upload'):
+        if cli.args.action in ('upload', 'verify-upload', 'apply-permissions'):
             upload_path = None
 
             if cli.args.upload_user:
@@ -74,7 +74,7 @@ def main():
                     if upload_path:
                         upload_path = upload_path.get_folder(tok, cli.args.action == 'upload')
 
-            if cli.args.action == 'verify-upload' and not upload_path:
+            if cli.args.action in ['verify-upload', 'apply-permissions'] and not upload_path:
                 cli.logger.critical(u'Failed to verify destination folder')
                 sys.exit(1)
 
@@ -162,7 +162,11 @@ def main():
                     cli.logger.warning(u'Failed to verify %s', dest)
                     retval = 1
 
-            elif cli.args.action in ('upload', 'verify-upload'):
+            elif cli.args.action in ('upload', 'verify-upload', 'apply-permissions'):
+                if cli.args.action == 'apply-permissions' and 'permissions' not in item:
+                    # No permissions to apply, don't waste time
+                    continue
+
                 steps = []
                 # Find parents by tracing up through references
                 cur = item
@@ -233,7 +237,8 @@ def main():
                                 retval = 1
                                 continue
                         else:
-                            if parent['upload_id'].verify_file(dest, step['name']):
+                            step['upload_id'] = parent['upload_id'].verify_file(dest, step['name'])
+                            if step['upload_id']:
                                 cli.logger.info(u'Verified %s', step_path)
                             else:
                                 cli.logger.warning(u'Failed to verify %s', step_path)
@@ -242,7 +247,7 @@ def main():
                     # FIXME: what should we do about missing users?
                     # FIXME: should we check to see if permissions already exist
                     # FIXME: need a CLI flag to disable permission setting
-                    if cli.args.action == 'upload' and 'upload_id' in step and 'permissions' in step:
+                    if cli.args.action in ['upload', 'apply-permissions'] and 'upload_id' in step and 'permissions' in step:
                         for perm in step['permissions']:
                             if 'link' in perm:
                                 cli.logger.info(u'Skipping %s scoped shared link', perm['link']['scope'])
@@ -261,7 +266,7 @@ def main():
                                 domain = domain_map[domain]
 
                             try:
-                                cli.logger.info(u'Applying permissions for %s', user)
+                                cli.logger.info(u'Applying permissions for %s@%s', user, domain)
                                 step['upload_id'].share(
                                     '{}@{}'.format(user, domain),
                                     perm['roles'],
