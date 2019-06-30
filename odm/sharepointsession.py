@@ -65,7 +65,7 @@ class SharepointSession(requests.Session):
                     self.logger.debug('throttled')
                     if 'retry-after' in result.headers:
                         delay = result.headers['retry-after']
-                elif result.status_code != 504:
+                elif result.status_code not in (503, 504):
                     return result
 
             if attempt < max_attempts:
