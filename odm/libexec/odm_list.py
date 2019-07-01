@@ -167,6 +167,8 @@ def main():
                     # No permissions to apply, don't waste time
                     continue
 
+                cli.logger.info(u'Working on %s', dest)
+
                 steps = []
                 # Find parents by tracing up through references
                 cur = item
