@@ -596,6 +596,9 @@ class DriveFolder(DriveItem):
         result.raise_for_status()
         upload_url = result.json()['d']['__metadata']['uri']
 
+        # Argh. The returned URL isn't always valid? Escape ' -> '' (again)
+        upload_url = upload_url.replace('%27', '%27%27')
+
         result = None
         guid = uuid.uuid4()
         start = 0
