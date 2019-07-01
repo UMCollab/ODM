@@ -145,6 +145,16 @@ gdm filetree /var/tmp/ezekielh verify --upload-user ezekielh --upload-path "Magi
   it is impossible to preserve the original modification information or have it
   display a less generic name.
 
+* OneDrive is normally provisioned on a JIT basis when the user accesses the
+  service, rather than at the time of account creation / license assignment.
+  ODM cannot upload to OneDrive unless the drive is provisioned. SharePoint
+  Online [provides an API endpoint](https://docs.microsoft.com/en-us/previous-versions/office/developer/sharepoint-rest-reference/dn790354%28v=office.15%29#createpersonalsiteenqueuebulk-method)
+  for requesting the asynchronous bulk creation of drives. ODM does not
+  currently have the ability to call this API, but PowerShell tools exist to
+  request bulk creation using SharePoint Admin credentials. Once requests were
+  put into the black box we observed widely varying provisioning rates ranging
+  between ~80/hour and ~240/hour.
+
 * OneDrive filenames can be up to 400 characters in length, while most Unix
   filesystems only allow 255 bytes (which could be as few as 63 UTF-8
   characters.) If ODM encounters a filename or path component that is more than
