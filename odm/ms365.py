@@ -433,7 +433,7 @@ class DriveFolder(DriveItem):
         payload = {
             'name': name,
             'folder': {},
-            '@microsoft.graph.conflictBehavior': 'fail',
+            '@microsoft.graph.conflictBehavior': 'replace',
         }
 
         result = self.client.msgraph.post('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']), json = payload)
