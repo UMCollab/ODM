@@ -460,6 +460,9 @@ class DriveFolder(DriveItem):
         return notebook
 
     def verify_file(self, src, name):
+        # No leading or trailing whitespace
+        name = name.strip()
+
         match = None
         for child in self.children:
             if child['name'] == name:
@@ -493,6 +496,9 @@ class DriveFolder(DriveItem):
 
         self.logger.debug(u'uploading {}'.format(src))
         stat = os.stat(src)
+
+        # No leading or trailing whitespace
+        name = name.strip()
 
         # Check for existing, matching file
         existing = self.verify_file(src, name)
