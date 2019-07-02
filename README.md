@@ -1,9 +1,9 @@
 # ODM
 
-ODM is a set of tools for administratively downloading content from OneDrive
-to a local directory tree without the involvement of the end user. It also
-includes a tool for administratively uploading a local directory tree to Google
-Drive.
+ODM is a set of tools for administratively downloading content from
+OneDrive to a local directory tree without the involvement of the end
+user. It also includes tools for administratively uploading local
+files to OneDrive or Google Drive.
 
 ## Setting up your environment
 
@@ -173,6 +173,10 @@ gdm filetree /var/tmp/ezekielh verify --upload-user ezekielh --upload-path "Magi
 * OneDrive will sometimes return an incorrect file hash when listing files.
   Once the file has been downloaded, the API will then (usually) return the
   correct hash.
+
+* OneNote is fragile and breaks easily. It sometimes fails to render sections
+  uploaded via the API even though they are bit-exact copies of what was
+  originally downloaded. We do not know why.
 
 * Files detected as malware by OneDrive's scanning cannot be downloaded via
   the API.
