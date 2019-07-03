@@ -365,7 +365,7 @@ class DriveItem(object):
         self.raw = raw
         self.logger = logging.getLogger(__name__)
 
-    def move(self, new_parent, new_name):
+    def move(self, new_parent, new_name, force = True):
         payload = {}
         if new_parent:
             payload['parentReference'] = {
@@ -376,6 +376,9 @@ class DriveItem(object):
 
         if not payload:
             return
+
+        if force:
+            payload['@microsoft.graph.conflictBehavior'] = 'replace'
 
         result = self.client.msgraph.patch(
             'drives/{}/items/{}'.format(
@@ -505,10 +508,14 @@ class DriveFolder(DriveItem):
         if existing:
             return DriveItem(self.client, existing)
 
+        # There's not any obvious way to escape this character sequence, and
+        # if we do nothing the server returns "Bad request URL"
+        safe_name = name.replace('&#', '&_#')
+
         base_url = u'drives/{}/items/{}:/{}:/'.format(
             self.raw['parentReference']['driveId'],
             self.raw['id'],
-            quote(name.encode('utf-8')),
+            quote(safe_name.encode('utf-8')),
         )
 
         # The documentation says 4 MB; they might actually mean MiB but eh.
@@ -519,12 +526,15 @@ class DriveFolder(DriveItem):
                     data = f,
                 )
                 result.raise_for_status()
-                return DriveItem(self.client, result.json())
+                item = DriveItem(self.client, result.json())
+                if name != safe_name:
+                    item.move(None, name)
+                return item
 
         payload = {
             'item': {
                 '@microsoft.graph.conflictBehavior': 'replace',
-                'name': name,
+                'name': safe_name,
 #                # FIXME: returns 400. Why?
 #                'fileSystemInfo': {
 #                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
@@ -572,7 +582,10 @@ class DriveFolder(DriveItem):
                 start = int(result.json()['nextExpectedRanges'][0].split('-')[0])
                 result = None
 
-        return DriveItem(self.client, result.json())
+        item = DriveItem(self.client, result.json())
+        if name != safe_name:
+            item.move(None, name)
+        return item
 
     def upload_file_sharepoint(self, src, name):
         # 10 megabytes
