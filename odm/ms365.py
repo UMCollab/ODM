@@ -493,48 +493,24 @@ class DriveFolder(DriveItem):
 
         return None
 
-    def upload_file(self, src, name):
+    def _upload_file_simple(self, src, base_url):
+        with open(src, 'rb') as f:
+            result = self.client.msgraph.put(
+                base_url + u'content',
+                data = f,
+            )
+            result.raise_for_status()
+            return DriveItem(self.client, result.json())
+
+    def _upload_file_chunked(self, src, base_url, name):
         # 10 megabytes
         chunk_size = 1024 * 1024 * 10
-
-        self.logger.debug(u'uploading {}'.format(src))
         stat = os.stat(src)
-
-        # No leading or trailing whitespace
-        name = name.strip()
-
-        # Check for existing, matching file
-        existing = self.verify_file(src, name)
-        if existing:
-            return DriveItem(self.client, existing)
-
-        # There's not any obvious way to escape this character sequence, and
-        # if we do nothing the server returns "Bad request URL"
-        safe_name = name.replace('&#', '&_#')
-
-        base_url = u'drives/{}/items/{}:/{}:/'.format(
-            self.raw['parentReference']['driveId'],
-            self.raw['id'],
-            quote(safe_name.encode('utf-8')),
-        )
-
-        # The documentation says 4 MB; they might actually mean MiB but eh.
-        if stat.st_size < 4 * 1000 * 1000:
-            with open(src, 'rb') as f:
-                result = self.client.msgraph.put(
-                    base_url + u'content',
-                    data = f,
-                )
-                result.raise_for_status()
-                item = DriveItem(self.client, result.json())
-                if name != safe_name:
-                    item.move(None, name)
-                return item
 
         payload = {
             'item': {
                 '@microsoft.graph.conflictBehavior': 'replace',
-                'name': safe_name,
+                'name': name,
 #                # FIXME: returns 400. Why?
 #                'fileSystemInfo': {
 #                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
@@ -582,7 +558,36 @@ class DriveFolder(DriveItem):
                 start = int(result.json()['nextExpectedRanges'][0].split('-')[0])
                 result = None
 
-        item = DriveItem(self.client, result.json())
+        return DriveItem(self.client, result.json())
+
+    def upload_file(self, src, name):
+        self.logger.debug(u'uploading {}'.format(src))
+
+        # No leading or trailing whitespace
+        name = name.strip()
+
+        # Check for existing, matching file
+        existing = self.verify_file(src, name)
+        if existing:
+            return DriveItem(self.client, existing)
+
+        # There's not any obvious way to escape this character sequence, and
+        # if we do nothing the server returns "Bad request URL"
+        safe_name = name.replace('&#', '&_#')
+
+        base_url = u'drives/{}/items/{}:/{}:/'.format(
+            self.raw['parentReference']['driveId'],
+            self.raw['id'],
+            quote(safe_name.encode('utf-8')),
+        )
+
+        stat = os.stat(src)
+        # The documentation says 4 MB; they might actually mean MiB but eh.
+        if stat.st_size < 4 * 1000 * 1000:
+            item = self._upload_file_simple(src, base_url)
+        else:
+            item = self._upload_file_chunked(src, base_url, safe_name)
+
         if name != safe_name:
             item.move(None, name)
         return item
