@@ -171,8 +171,8 @@ gdm filetree /var/tmp/ezekielh verify --upload-user ezekielh --upload-path "Magi
   is not underneath that location.
 
 * OneDrive will sometimes return an incorrect file hash when listing files.
-  Once the file has been downloaded, the API will then (usually) return the
-  correct hash.
+  Once the file has been downloaded, the API will often, but not always, start
+  returning the correct hash.
 
 * OneNote is fragile and breaks easily. It sometimes fails to render sections
   uploaded via the API even though they are bit-exact copies of what was
