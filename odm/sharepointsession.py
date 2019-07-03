@@ -49,7 +49,7 @@ class SharepointSession(requests.Session):
 
         attempt = 0
         # FIXME: this should probably be configurable
-        max_attempts = 20
+        max_attempts = 30
         while attempt < max_attempts:
             attempt += 1
             delay = random.uniform(min(30, 2 ** attempt), min(300, 3 * 2 ** attempt))

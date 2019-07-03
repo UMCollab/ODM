@@ -62,7 +62,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
 
         attempt = 0
         # FIXME: this should probably be configurable
-        max_attempts = 20
+        max_attempts = 30
 
         with self.statsd.timer(method):
             while attempt < max_attempts:
