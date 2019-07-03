@@ -14,18 +14,12 @@ import requests
 import requests_oauthlib
 
 from oauthlib.oauth2 import BackendApplicationClient
-from statsd import StatsClient
 
 
 class OneDriveSession(requests_oauthlib.OAuth2Session):
     def __init__(self, domain, ms_config, timeout, **kwargs):
         self.baseurl = 'https://graph.microsoft.com/v1.0/'
         self.logger = logging.getLogger(__name__)
-        self.statsd = StatsClient(
-            'localhost',
-            8125,
-            prefix = 'odm.onedrivesession',
-        )
         self.domain = domain
         self.ms_config = ms_config
         self.timeout = timeout
@@ -64,33 +58,29 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
         # FIXME: this should probably be configurable
         max_attempts = 30
 
-        with self.statsd.timer(method):
-            while attempt < max_attempts:
-                attempt += 1
-                delay = random.uniform(min(30, 2 ** attempt), min(300, 3 * 2 ** attempt))
-                try:
-                    result = super(OneDriveSession, self).request(method, url, **kwargs)
-                except(
-                    requests.exceptions.ReadTimeout,
-                    requests.exceptions.ConnectionError,
-                ) as e:
-                    self.logger.info(u'Retryable requests error', exc_info=e)
-                    self.statsd.incr('http.error')
-                else:
-                    self.statsd.incr('http.{}'.format(result.status_code))
-                    if result.status_code == 400:
-                        self.logger.info(result.content)
+        while attempt < max_attempts:
+            attempt += 1
+            delay = random.uniform(min(30, 2 ** attempt), min(300, 3 * 2 ** attempt))
+            try:
+                result = super(OneDriveSession, self).request(method, url, **kwargs)
+            except(
+                requests.exceptions.ReadTimeout,
+                requests.exceptions.ConnectionError,
+            ) as e:
+                self.logger.info(u'Retryable requests error', exc_info=e)
+            else:
+                if result.status_code == 400:
+                    self.logger.info(result.content)
 
-                    if result.status_code == 429:
-                        self.logger.debug('throttled')
-                        if 'retry-after' in result.headers:
-                            delay = result.headers['retry-after']
-                    elif result.status_code not in (503, 504):
-                        return result
+                if result.status_code == 429:
+                    self.logger.debug('throttled')
+                    if 'retry-after' in result.headers:
+                        delay = result.headers['retry-after']
+                elif result.status_code not in (503, 504):
+                    return result
 
-                if attempt < max_attempts:
-                    self.logger.info('Sleeping for {} seconds before retrying'.format(delay))
-                    self.statsd.timing('retrydelay', int(float(delay) * 1000))
-                    time.sleep(float(delay))
+            if attempt < max_attempts:
+                self.logger.info('Sleeping for {} seconds before retrying'.format(delay))
+                time.sleep(float(delay))
 
         raise(requests.exceptions.RetryError('maximum retries exceeded'))
