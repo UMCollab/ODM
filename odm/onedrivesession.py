@@ -78,6 +78,9 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
                     self.statsd.incr('http.error')
                 else:
                     self.statsd.incr('http.{}'.format(result.status_code))
+                    if result.status_code == 400:
+                        self.logger.info(result.content)
+
                     if result.status_code == 429:
                         self.logger.debug('throttled')
                         if 'retry-after' in result.headers:
