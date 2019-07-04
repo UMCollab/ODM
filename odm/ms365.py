@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import logging
 import os
+import time
 import uuid
 
 from datetime import datetime
@@ -553,7 +554,6 @@ class DriveFolder(DriveItem):
             )
             if result.status_code == 404:
                 self.logger.info('Invalid upload session')
-                # FIXME: retry
                 return None
             result.raise_for_status()
             if result.status_code == 202:
@@ -588,6 +588,7 @@ class DriveFolder(DriveItem):
         item = None
         attempt = 0
         while not item and attempt < 5:
+            attempt += 1
             try:
                 # The documentation says 4 MB; they might actually mean MiB
                 if stat.st_size < 4 * 1000 * 1000:
@@ -596,6 +597,8 @@ class DriveFolder(DriveItem):
                     item = self._upload_file_chunked(src, base_url, safe_name)
             except HTTPError:
                 item = None
+                if attempt < 5:
+                    time.sleep(5)
 
         if item and name != safe_name:
             item.move(None, name)
@@ -708,6 +711,8 @@ class DriveFolder(DriveItem):
             # FIXME: should this be more selective?
             except HTTPError:
                 result = None
+                if attempt < 5:
+                    time.sleep(5)
 
         return result
 
