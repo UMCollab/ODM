@@ -421,6 +421,7 @@ class DriveFolder(DriveItem):
         return self.client.get_list('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']))['value']
 
     def get_folder(self, name, create = True):
+        name = name.strip()
         for child in self.children:
             if child['name'] == name:
                 if 'folder' not in child:
@@ -444,6 +445,7 @@ class DriveFolder(DriveItem):
         return DriveFolder(self.client, result.json())
 
     def get_notebook(self, name, container, create = True):
+        name = name.strip()
         for child in self.children:
             if child['name'] == name:
                 if 'package' not in child or child['package']['type'] != 'oneNote':
