@@ -490,7 +490,11 @@ class DriveFolder(DriveItem):
         if not match:
             return None
 
-        stat = os.stat(src)
+        try:
+            stat = os.stat(src)
+        except OSError:
+            return None
+
         if stat.st_size != match['size']:
             return None
 
@@ -595,7 +599,10 @@ class DriveFolder(DriveItem):
             quote(safe_name.encode('utf-8')),
         )
 
-        stat = os.stat(src)
+        try:
+            stat = os.stat(src)
+        except OSError:
+            return None
 
         item = None
         attempt = 0
@@ -707,7 +714,10 @@ class DriveFolder(DriveItem):
             quote(name.replace("'", "''").encode('utf-8')),
         )
 
-        stat = os.stat(src)
+        try:
+            stat = os.stat(src)
+        except OSError:
+            return None
 
         result = None
         attempt = 0
