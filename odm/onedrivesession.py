@@ -79,6 +79,9 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
                 elif result.status_code not in (503, 504):
                     return result
 
+            if 'data' in kwargs and hasattr(kwargs['data'], 'read'):
+                raise(requests.exceptions.RetryError('retries unavailable with file-like data'))
+
             if attempt < max_attempts:
                 self.logger.info('Sleeping for {} seconds before retrying'.format(delay))
                 time.sleep(float(delay))
