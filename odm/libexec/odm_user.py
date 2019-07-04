@@ -17,6 +17,7 @@ import odm.ms365
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
+    # FIXME: skip-permissions should be include-permissions
     cli = odm.cli.CLI(['user', 'action', '--incremental'], ['--skip-permissions'])
     client = cli.client
     username = client.mangle_user(cli.args.user)
