@@ -286,7 +286,7 @@ class Drive(object):
     def __str__(self):
         return self.raw.get('id', 'None')
 
-    def delta(self, base):
+    def delta(self, base, include_permissions = True):
         include_delta = False
 
         if not self.raw:
@@ -319,11 +319,12 @@ class Drive(object):
                     delta['deleted'].append(old)
 
             else:
-                item.update(
-                    self.client.msgraph.get(
-                        'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
-                    ).json()
-                )
+                if include_permissions:
+                    item.update(
+                        self.client.msgraph.get(
+                            'drives/{}/items/{}?select=id,permissions&expand=permissions'.format(item['parentReference']['driveId'], item['id'])
+                        ).json()
+                    )
 
                 # Don't record inherited permissions
                 perms = item.pop('permissions', None)

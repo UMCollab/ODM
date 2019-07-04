@@ -17,7 +17,7 @@ import odm.ms365
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['user', 'action', '--incremental'])
+    cli = odm.cli.CLI(['user', 'action', '--incremental'], ['--skip-permissions'])
     client = cli.client
     username = client.mangle_user(cli.args.user)
 
@@ -42,7 +42,7 @@ def main():
             with open(cli.args.incremental, 'rb') as f:
                 base = json.load(f)
 
-        user.drive.delta(base)
+        user.drive.delta(base, include_permissions = not cli.args.skip_permissions)
 
         print(json.dumps(base, indent = 2))
 
