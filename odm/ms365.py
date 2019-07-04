@@ -18,7 +18,7 @@ try:
 except ImportError:
     from urllib import quote
 
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, RetryError
 
 from odm import quickxorhash
 from odm.util import ChunkyFile
@@ -595,7 +595,7 @@ class DriveFolder(DriveItem):
                     item = self._upload_file_simple(src, base_url)
                 else:
                     item = self._upload_file_chunked(src, base_url, safe_name)
-            except HTTPError:
+            except (HTTPError, RetryError):
                 item = None
                 if attempt < 5:
                     time.sleep(5)
@@ -708,8 +708,7 @@ class DriveFolder(DriveItem):
                     result = self._upload_file_sharepoint_simple(client, src, upload_url)
                 else:
                     result = self._upload_file_sharepoint_chunked(client, src, upload_url)
-            # FIXME: should this be more selective?
-            except HTTPError:
+            except (HTTPError, RetryError):
                 result = None
                 if attempt < 5:
                     time.sleep(5)
