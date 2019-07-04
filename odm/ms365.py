@@ -462,7 +462,18 @@ class DriveFolder(DriveItem):
 
         notebook = container.create_notebook(name)
         if notebook.raw['parentReference']['id'] != self.raw['id'] or notebook.raw['name'] != name:
-            notebook.move(self.raw['id'], name)
+            attempt = 0
+            while attempt < 5:
+                attempt += 1
+                try:
+                    notebook.move(self.raw['id'], name)
+                    attempt = 5
+                except HTTPError as e:
+                    if e.response.status_code == 423:
+                        time.sleep(5)
+                    else:
+                        raise
+
         return notebook
 
     def verify_file(self, src, name):
