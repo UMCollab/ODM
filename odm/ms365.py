@@ -582,61 +582,34 @@ class DriveFolder(DriveItem):
         )
 
         stat = os.stat(src)
-        # The documentation says 4 MB; they might actually mean MiB but eh.
-        if stat.st_size < 4 * 1000 * 1000:
-            item = self._upload_file_simple(src, base_url)
-        else:
-            item = self._upload_file_chunked(src, base_url, safe_name)
 
-        if name != safe_name:
+        item = None
+        attempt = 0
+        while not item and attempt < 5:
+            try:
+                # The documentation says 4 MB; they might actually mean MiB
+                if stat.st_size < 4 * 1000 * 1000:
+                    item = self._upload_file_simple(src, base_url)
+                else:
+                    item = self._upload_file_chunked(src, base_url, safe_name)
+            except HTTPError:
+                item = None
+
+        if item and name != safe_name:
             item.move(None, name)
         return item
 
-    def upload_file_sharepoint(self, src, name):
+    def _upload_file_sharepoint_simple(self, client, src, upload_url):
+        with open(src, 'rb') as f:
+            result = client.post(upload_url, data = f, timeout = 1200)
+        result.raise_for_status()
+        return result.json()
+
+    def _upload_file_sharepoint_chunked(self, client, src, upload_url):
         # 10 megabytes
         chunk_size = 1024 * 1024 * 10
 
-        result = self.client.msgraph.get('drives/{}/items/{}?select=sharepointIds'.format(self.raw['parentReference']['driveId'], self.raw['id']))
-        result.raise_for_status()
-        result = result.json()
-
-        site_url = result['sharepointIds']['siteUrl']
-        client = self.client.sharepoint(
-            site_url[0:site_url.index('/', 9) + 1],
-        )
-
-        if 'listItemId' not in result['sharepointIds']:
-            # The root folder isn't actually a list item, so it doesn't have
-            # a list item id.
-
-            # fence in case I'm incorrect about why this happens
-            assert self.raw['name'] == 'root'
-
-            upload_url = "{}/_api/web/lists(guid'{}')/RootFolder".format(
-                site_url,
-                result['sharepointIds']['listId'],
-            )
-        else:
-            upload_url = "{}/_api/web/lists(guid'{}')/items({})/Folder".format(
-                site_url,
-                result['sharepointIds']['listId'],
-                result['sharepointIds']['listItemId'],
-            )
-
-        upload_url += "/Files/Add(url='{}', overwrite=true)".format(
-            quote(name.replace("'", "''").encode('utf-8')),
-        )
-
         stat = os.stat(src)
-
-        # In this case the limit is actually MiB, but it's on the request so
-        # we want to leave a bit of breathing room.
-        if stat.st_size < 250 * 1000 * 1000:
-            with open(src, 'rb') as f:
-                result = client.post(upload_url, data = f, timeout = 1200)
-
-            result.raise_for_status()
-            return result.json()
 
         # Create temporary empty file to target with the multi-part upload
         result = client.post(upload_url)
@@ -684,6 +657,57 @@ class DriveFolder(DriveItem):
                 result = None
 
         return result.json()
+
+    def upload_file_sharepoint(self, src, name):
+        result = self.client.msgraph.get('drives/{}/items/{}?select=sharepointIds'.format(self.raw['parentReference']['driveId'], self.raw['id']))
+        result.raise_for_status()
+        result = result.json()
+
+        site_url = result['sharepointIds']['siteUrl']
+        client = self.client.sharepoint(
+            site_url[0:site_url.index('/', 9) + 1],
+        )
+
+        if 'listItemId' not in result['sharepointIds']:
+            # The root folder isn't actually a list item, so it doesn't have
+            # a list item id.
+
+            # fence in case I'm incorrect about why this happens
+            assert self.raw['name'] == 'root'
+
+            upload_url = "{}/_api/web/lists(guid'{}')/RootFolder".format(
+                site_url,
+                result['sharepointIds']['listId'],
+            )
+        else:
+            upload_url = "{}/_api/web/lists(guid'{}')/items({})/Folder".format(
+                site_url,
+                result['sharepointIds']['listId'],
+                result['sharepointIds']['listItemId'],
+            )
+
+        upload_url += "/Files/Add(url='{}', overwrite=true)".format(
+            quote(name.replace("'", "''").encode('utf-8')),
+        )
+
+        stat = os.stat(src)
+
+        result = None
+        attempt = 0
+        while not result and attempt < 5:
+            attempt += 1
+            try:
+                # In this case the limit is actually MiB, but it's on the
+                # request so we want to leave a bit of breathing room.
+                if stat.st_size < 250 * 1000 * 1000:
+                    result = self._upload_file_sharepoint_simple(client, src, upload_url)
+                else:
+                    result = self._upload_file_sharepoint_chunked(client, src, upload_url)
+            # FIXME: should this be more selective?
+            except HTTPError:
+                result = None
+
+        return result
 
 
 class Notebook(DriveFolder):
