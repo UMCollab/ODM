@@ -31,10 +31,14 @@ class Container(object):
         self.logger = logging.getLogger(__name__)
         self.raw = None
         self._drive = None
+        self._select = None
 
     def show(self):
         if self._id:
-            result = self.client.get_list('{}/{}'.format(self._prefix, self._id))
+            url = '{}/{}'.format(self._prefix, self._id)
+            if self._select:
+                url += '?$select=' + ','.join(self._select)
+            result = self.client.get_list(url)
             if self.raw:
                 self.raw.update(result)
             else:
@@ -239,6 +243,24 @@ class User(Container):
         super(User, self).__init__(client, name)
         self._prefix = 'users'
         self._id = name
+        self._select = [
+            'accountEnabled',
+            'assignedLicenses',
+            'assignedPlans',
+            'createdDateTime',
+            'displayName',
+            'givenName',
+            'id',
+            'jobTitle',
+            'licenseAssignmentStates',
+            'mail',
+            'onPremisesDistinguishedName',
+            'onPremisesLastSyncDateTime',
+            'onPremisesProvisioningErrors',
+            'onPremisesSyncEnabled',
+            'surname',
+            'userPrincipalName',
+        ]
 
     def __str__(self):
         return 'user {}'.format(self.name)
