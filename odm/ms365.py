@@ -717,6 +717,10 @@ class DriveFolder(DriveItem):
         return result.json()
 
     def upload_file_sharepoint(self, src, name):
+        existing = self.verify_file(src, name)
+        if existing:
+            return DriveItem(self.client, existing)
+
         result = self.client.msgraph.get('drives/{}/items/{}?select=sharepointIds'.format(self.raw['parentReference']['driveId'], self.raw['id']))
         result.raise_for_status()
         result = result.json()
