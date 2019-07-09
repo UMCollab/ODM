@@ -440,9 +440,15 @@ class DriveItem(object):
 
 
 class DriveFolder(DriveItem):
+    def __init__(self, client, raw):
+        super(DriveFolder, self).__init__(client, raw)
+        self._children = None
+
     @property
     def children(self):
-        return self.client.get_list('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']))['value']
+        if not self._children:
+            self._children = self.client.get_list('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']))['value']
+        return self._children
 
     def get_folder(self, name, create = True):
         name = name.strip()
@@ -456,6 +462,9 @@ class DriveFolder(DriveItem):
 
         if not create:
             return None
+
+        # Invalidate cache
+        self._children = None
 
         self.logger.debug(u'Creating folder %s', name)
         payload = {
@@ -480,6 +489,9 @@ class DriveFolder(DriveItem):
 
         if not create:
             return None
+
+        # Invalidate cache
+        self._children = None
 
         self.logger.debug(u'Creating notebook %s', name)
 
