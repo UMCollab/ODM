@@ -69,7 +69,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
             ) as e:
                 self.logger.info(u'Retryable requests error', exc_info=e)
             else:
-                if result.status_code == 400:
+                if result.status_code in (400, 500):
                     self.logger.info(result.content)
 
                 if result.status_code == 429:
