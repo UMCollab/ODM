@@ -664,8 +664,8 @@ class DriveFolder(DriveItem):
         return result.json()
 
     def _upload_file_sharepoint_chunked(self, client, src, upload_url):
-        # 10 megabytes
-        chunk_size = 1024 * 1024 * 10
+        # 20 MiB
+        chunk_size = 1024 * 1024 * 20
 
         stat = os.stat(src)
 
