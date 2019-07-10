@@ -155,6 +155,9 @@ gdm filetree /var/tmp/ezekielh verify --upload-user ezekielh --upload-path "Magi
   put into the black box we observed widely varying provisioning rates ranging
   between ~80/hour and ~240/hour.
 
+* OneDrive filenames are not case sensitive. ODM does not currently make any
+  attempt to handle case discrepancies or filename collision.
+
 * OneDrive filenames can be up to 400 characters in length, while most Unix
   filesystems only allow 255 bytes (which could be as few as 63 UTF-8
   characters.) If ODM encounters a filename or path component that is more than
