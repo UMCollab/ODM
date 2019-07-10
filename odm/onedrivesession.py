@@ -76,7 +76,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
                     self.logger.debug('throttled')
                     if 'retry-after' in result.headers:
                         delay = result.headers['retry-after']
-                elif result.status_code not in (503, 504):
+                elif result.status_code not in (500, 503, 504):
                     return result
 
             if 'data' in kwargs and hasattr(kwargs['data'], 'read'):
