@@ -22,6 +22,9 @@ class SharepointSession(requests.Session):
         self.ms_config = ms_config
         self.timeout = timeout
         self._fresh_token()
+        self.headers.update({
+            'User-Agent': 'NONISV|UniversityOfMichigan|odm/2.0 ({})'.format(ms_config['client_id']),
+        })
 
     def _fresh_token(self):
         self.logger.debug('Fetching fresh authorization token.')

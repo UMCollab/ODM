@@ -31,6 +31,9 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
         # This is just so OAuth2Session.request() won't raise TokenUpdated
         self.token_updater = lambda x: None
         self._fresh_token()
+        self.headers.update({
+            'User-Agent': 'NONISV|UniversityOfMichigan|odm/2.0 ({})'.format(ms_config['client_id']),
+        })
 
     def _fresh_token(self):
         self.logger.debug('Fetching fresh authorization token.')
