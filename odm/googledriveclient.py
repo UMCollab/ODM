@@ -18,6 +18,8 @@ from hashlib import md5
 import google.oauth2.service_account
 import google.auth.transport.requests
 
+from odm.version import VERSION
+
 
 class GoogleDriveClient:
     def __init__(self, config):
@@ -41,6 +43,9 @@ class GoogleDriveClient:
                 **cred_kwargs
             )
         self.session = google.auth.transport.requests.AuthorizedSession(self.creds)
+        self.session.headers.update({
+            'User-Agent': 'odm/{}'.format(VERSION),
+        })
 
     def _request(self, verb, path, **kwargs):
         if self.baseurl not in path:

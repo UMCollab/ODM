@@ -5,3 +5,4 @@ dist/
 oauth2service.json
 odm.egg-info
 VERSION
+odm/version.py

@@ -15,6 +15,7 @@ import requests_oauthlib
 
 from oauthlib.oauth2 import BackendApplicationClient
 
+from odm.version import VERSION
 
 class OneDriveSession(requests_oauthlib.OAuth2Session):
     def __init__(self, domain, ms_config, timeout, **kwargs):
@@ -32,7 +33,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
         self.token_updater = lambda x: None
         self._fresh_token()
         self.headers.update({
-            'User-Agent': 'NONISV|UniversityOfMichigan|odm/2.0 ({})'.format(ms_config['client_id']),
+            'User-Agent': 'odm/{} ({})'.format(VERSION, ms_config['client_id']),
         })
 
     def _fresh_token(self):

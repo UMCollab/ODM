@@ -3,9 +3,17 @@
 cd $(readlink -fn $(dirname "$BASH_SOURCE"))
 
 if [ -d .git ]; then
-    git describe --tags | perl -pe 'chomp; s/-/./; s/-.*//' | tee VERSION
+    version=$(git describe --tags | perl -pe 'chomp; s/-/./; s/-.*//' | tee VERSION)
 elif [ -s VERSION ]; then
-    cat VERSION
+    version=$(cat VERSION)
 else
-    printf %s UNKNOWN
+    printf -v version %s UNKNOWN
 fi
+
+cat > odm/version.py <<EOF
+#!/usr/bin/env python
+
+VERSION = '$version'
+EOF
+
+printf %s $version
