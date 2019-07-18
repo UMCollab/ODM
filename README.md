@@ -141,6 +141,12 @@ gdm filetree /var/tmp/ezekielh verify --upload-user ezekielh --upload-path "Magi
 * Shared links are not recreated during upload; this functionality *is* exposed
   via the API, but it's not clear that it would be useful behaviour.
 
+* Microsoft does not like it when you upload large amounts of data,
+  and may arbitrarily ban your client for a period of time even though ODM does
+  incremental backoff for failed requests and respects Retry-After headers.
+  We have seen this manifest as spurious `401 Unauthorized` and `503 Service
+  Unavailable` responses.
+
 * Files uploaded to OneDrive will show up as last modified by `SharePoint App`;
   it is impossible to preserve the original modification information or have it
   display a less generic name.
