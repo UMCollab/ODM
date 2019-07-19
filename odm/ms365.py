@@ -515,6 +515,8 @@ class DriveFolder(DriveItem):
         # No leading or trailing whitespace
         name = name.strip()
 
+        # FIXME: can we make this more efficient for folders with thousands
+        # of files?
         match = None
         for child in self.children:
             if child['name'] == name:
@@ -619,9 +621,10 @@ class DriveFolder(DriveItem):
         name = name.strip()
 
         # Check for existing, matching file
-        existing = self.verify_file(src, name)
-        if existing:
-            return DriveItem(self.client, existing)
+        # FIXME
+        #existing = self.verify_file(src, name)
+        #if existing:
+        #    return DriveItem(self.client, existing)
 
         # There's not any obvious way to escape this character sequence, and
         # if we do nothing the server returns "Bad request URL"
