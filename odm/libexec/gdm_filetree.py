@@ -28,7 +28,7 @@ def main():
         count = 0
         size = 0
 
-        parent = None
+        parent = 'root'
         for tok in dest.split('/'):
             if cli.args.action == 'upload':
                 parent = client.create_file(tok, parent, folder = True)
