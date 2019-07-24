@@ -204,20 +204,10 @@ def main():
                         try:
                             step['upload_id'] = parent['upload_id'].get_notebook(step['name'], upload_container, cli.args.action == 'upload')
                         except TypeError:
-                            # FIXME: sharegate hack
-                            try:
-                                step['upload_id'] = parent['upload_id'].get_folder(step['name'], False)
-                            except TypeError:
-                                step['upload_id'] = 'skip'
-                                cli.logger.error(u'Failed to create notebook %s, path conflict', step_path)
-                                retval = 1
-                                continue
-                            else:
-                                if step['upload_id']:
-                                    cli.logger.warning(u'Previously migrated using ShareGate, notebook %s is a folder', step_path)
-                                else:
-                                    step['upload_id'] = 'skip'
-                                    cli.logger.error(u'Failed to create notebook %s', step_path)
+                            step['upload_id'] = 'skip'
+                            cli.logger.error(u'Failed to create notebook %s', step_path)
+                            retval = 1
+                            continue
 
                         if cli.args.action == 'verify-upload' and not step['upload_id']:
                             step['upload_id'] = 'failed'
