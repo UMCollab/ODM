@@ -170,7 +170,7 @@ class OneDriveClient:
     def _download(self, url, dest, calculate_hash = False):
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
-            os.makedirs(destdir, 0755)
+            os.makedirs(destdir, 0o0755)
 
         h = None
         if calculate_hash:
@@ -217,7 +217,7 @@ class OneDriveClient:
 
     def _convert_page(self, page_url, page_name, dest, quirky):
         if not os.path.exists(dest + '/data'):
-            os.makedirs(dest + '/data', 0755)
+            os.makedirs(dest + '/data', 0o0755)
         raw_path = '/'.join([dest, 'raw', page_name, 'api_response'])
         result = self._download(page_url, raw_path)
         ink_file = '.'.join([raw_path, 'application_inkml+xml'])
@@ -301,7 +301,7 @@ class OneDriveClient:
 
         basedir = '/'.join([destdir, metadata['displayName']])
         if not os.path.exists(basedir):
-            os.makedirs(basedir, 0755)
+            os.makedirs(basedir, 0o0755)
 
         for section in metadata['sections']:
             div = html.new_tag('div')
