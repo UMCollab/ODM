@@ -450,15 +450,30 @@ class DriveFolder(DriveItem):
             self._children = self.client.get_list('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']))['value']
         return self._children
 
-    def get_folder(self, name, create = True):
+    def get_child(self, name):
+        # No leading or trailing whitespace
         name = name.strip()
-        for child in self.children:
-            if child['name'] == name:
-                if 'folder' not in child:
-                    if not create:
-                        return None
-                    raise TypeError('{} already exists but is not a folder'.format(name))
-                return DriveFolder(self.client, child)
+
+        result = self.client.msgraph.get(u'drives/{}/items/{}:/{}:/'.format(
+                self.raw['parentReference']['driveId'],
+                self.raw['id'],
+                quote(name.encode('utf-8')),
+            )
+        )
+
+        if not result.ok:
+            return None
+
+        return result.json()
+
+    def get_folder(self, name, create = True):
+        child = self.get_child(name)
+        if child:
+            if 'folder' not in child:
+                if not create:
+                    return None
+                raise TypeError('{} already exists but is not a folder'.format(name))
+            return DriveFolder(self.client, child)
 
         if not create:
             return None
@@ -478,14 +493,13 @@ class DriveFolder(DriveItem):
         return DriveFolder(self.client, result.json())
 
     def get_notebook(self, name, container, create = True):
-        name = name.strip()
-        for child in self.children:
-            if child['name'] == name:
-                if 'package' not in child or child['package']['type'] != 'oneNote':
-                    if not create:
-                        return None
-                    raise TypeError(u'{} already exists but is not a OneNote package'.format(name))
-                return Notebook(self.client, child)
+        child = self.get_child(name)
+        if child:
+            if 'package' not in child or child['package']['type'] != 'oneNote':
+                if not create:
+                    return None
+                raise TypeError(u'{} already exists but is not a OneNote package'.format(name))
+            return Notebook(self.client, child)
 
         if not create:
             return None
@@ -512,14 +526,7 @@ class DriveFolder(DriveItem):
         return notebook
 
     def verify_file(self, src, name):
-        # No leading or trailing whitespace
-        name = name.strip()
-
-        match = None
-        for child in self.children:
-            if child['name'] == name:
-                match = child
-                break
+        match = self.get_child(name)
 
         if not match:
             return None
