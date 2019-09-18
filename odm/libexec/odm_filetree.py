@@ -46,7 +46,7 @@ def main():
 
         dir_map['.'] = upload_dir
 
-        for root, dirs, files in os.walk(cli.args.path):
+        for root, dirs, files in os.walk(unicode(cli.args.path, 'utf-8')):
             parent = os.path.relpath(root, cli.args.path)
             for dname in dirs:
                 relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
