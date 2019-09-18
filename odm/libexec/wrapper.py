@@ -6,6 +6,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import importlib
 import os
 import sys
 
@@ -21,7 +22,7 @@ def main():
     elif cmd.startswith('gdm'):
         cmd = 'gdm'
     else:
-        print('Failed to figure out what I am: {} is an invalid wrapper name'.format(sys.argv[0]))
+        print('Unsupported/unknown wrapper "{}"'.format(sys.argv[0]), file = sys.stderr)
         sys.exit(1)
 
     # Allow -c <file> to occur before the subcommand
@@ -29,8 +30,12 @@ def main():
     if sys.argv[1] in ['-c', '--config']:
         idx = 3
 
-    # This is incredibly ugly, but it works.
-    exec('from odm.libexec import {}_{} as subcommand'.format(cmd, sys.argv[idx]))
+    try:
+        subcommand = importlib.import_module('odm.libexec.{}_{}'.format(cmd, sys.argv[idx]))
+    except ImportError:
+        print('Unsupported/unknown subcommand "{} {}"'.format(cmd, sys.argv[idx]), file = sys.stderr)
+        sys.exit(1)
+
     sys.argv[0] += ' ' + sys.argv[idx]
     del(sys.argv[idx])
     subcommand.main()
