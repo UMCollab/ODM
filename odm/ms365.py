@@ -389,6 +389,17 @@ class DriveItem(object):
         self.raw = raw
         self.logger = logging.getLogger(__name__)
 
+    def patch(self, payload):
+        result = self.client.msgraph.patch(
+            'drives/{}/items/{}'.format(
+                self.raw['parentReference']['driveId'],
+                self.raw['id'],
+            ),
+            json = payload,
+        )
+        result.raise_for_status()
+        self.raw = result.json()
+
     def move(self, new_parent, new_name, force = True):
         payload = {}
         if new_parent:
@@ -404,15 +415,7 @@ class DriveItem(object):
         if force:
             payload['@microsoft.graph.conflictBehavior'] = 'replace'
 
-        result = self.client.msgraph.patch(
-            'drives/{}/items/{}'.format(
-                self.raw['parentReference']['driveId'],
-                self.raw['id'],
-            ),
-            json = payload,
-        )
-        result.raise_for_status()
-        self.raw = result.json()
+        self.patch(payload)
 
     def share(self, user, roles):
         payload = {
@@ -577,10 +580,6 @@ class DriveFolder(DriveItem):
             'item': {
                 '@microsoft.graph.conflictBehavior': 'replace',
                 'name': name,
-#                # FIXME: returns 400. Why?
-#                'fileSystemInfo': {
-#                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
-#                },
             },
         }
 
@@ -666,8 +665,16 @@ class DriveFolder(DriveItem):
                 if attempt < 5:
                     time.sleep(5)
 
-        if item and name != safe_name:
-            item.move(None, name)
+        if item:
+            item.patch({
+                'fileSystemInfo': {
+                    'lastModifiedDateTime': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z',
+                },
+            })
+
+            if name != safe_name:
+                item.move(None, name)
+
         return item
 
     def _upload_file_sharepoint_simple(self, client, src, upload_url):
