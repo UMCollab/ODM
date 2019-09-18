@@ -607,7 +607,7 @@ class DriveFolder(DriveItem):
                     'Content-Length': str(size),
                     'Content-Range': 'bytes {}-{}/{}'.format(start, end, stat.st_size),
                 },
-                timeout = 1200,     # FIXME: what should this actually be?
+                timeout = 1200,
             )
             if result.status_code == 404:
                 self.logger.info('Invalid upload session')

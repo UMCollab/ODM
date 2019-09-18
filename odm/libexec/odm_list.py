@@ -23,7 +23,7 @@ import odm.ms365
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-group', '--upload-path', '--domain-map', '--length', '--split-prefix', '--limit', '--exclude', '--diff', 'file', 'action'])
+    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-group', '--upload-path', '--domain-map', '--length', '--split-prefix', '--limit', '--exclude', '--diff', 'file', 'action'], ['--skip-permissions'])
     client = cli.client
 
     ts_start = datetime.datetime.now()
@@ -33,6 +33,12 @@ def main():
         metadata = json.load(f)
 
     destdir = cli.args.filetree.rstrip('/') if cli.args.filetree else '/var/tmp'
+
+    apply_permissions = False
+    if cli.args.action == 'apply-permissions':
+        apply_permissions = True
+    elif cli.args.action == 'upload' and not cli.args.skip_permissions:
+        apply_permissions = True
 
     if cli.args.action == 'convert-notebooks':
         for book in metadata['notebooks']:
@@ -249,8 +255,7 @@ def main():
 
                     # FIXME: what should we do about missing users?
                     # FIXME: should we check to see if permissions already exist
-                    # FIXME: need a CLI flag to disable permission setting
-                    if cli.args.action in ['upload', 'apply-permissions'] and 'upload_id' in step and 'permissions' in step:
+                    if apply_permissions and 'upload_id' in step and 'permissions' in step:
                         for perm in step['permissions']:
                             if 'link' in perm:
                                 cli.logger.info(u'Skipping %s scoped shared link', perm['link']['scope'])

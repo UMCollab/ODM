@@ -48,7 +48,6 @@ account.
     * and the necessary application permissions for Sharepoint:
         * Sites.FullControl.All
     * Grant admin consent for your tenant by clicking on the button.
-    * FIXME: should we document getting admin consent for other domains?
 
 
 ### Google Service Account
