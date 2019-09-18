@@ -3,7 +3,7 @@ import os
 from setuptools import setup
 from subprocess import check_output
 
-version = check_output(['bash', os.path.join(os.path.dirname(__file__), 'version.sh')])
+version = check_output(['bash', os.path.join(os.path.dirname(__file__), 'version.sh')]).decode('utf-8')
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
     long_description = f.read()
