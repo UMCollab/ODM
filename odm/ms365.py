@@ -454,6 +454,12 @@ class DriveFolder(DriveItem):
         # No leading or trailing whitespace
         name = name.strip()
 
+        # Check to see if we already have metadata for this file
+        if self._children:
+            for child in self._children:
+                if child['name'] == name:
+                    return child
+
         result = self.client.msgraph.get(u'drives/{}/items/{}:/{}:/'.format(
                 self.raw['parentReference']['driveId'],
                 self.raw['id'],
