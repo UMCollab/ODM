@@ -1,10 +1,10 @@
-## 2.0.0 (unreleased)
+## 2.0.0 (2019-09-19)
 
 ### Features
 - Support for uploading to OneDrive.
 - Efficient drive item enumeration.
-- Efficient incremental operations.
-- Support for targeting shared drives (Teams and SharePoint), not just personal OneDrives.
+- Rudimentary, mostly unuseful support for incremental operations.
+- Rudimentary, mostly untested support for groups/shared drives.
 - Reduced memory footprint.
 
 ### Incompatible changes
@@ -13,7 +13,9 @@
 
 ### Bugfixes
 - Compatible with newer versions of requests_oauthlib
-- Improved retry logic
+- Improved retry logic.
+- gdm's lookup of folders inside the root will no longer return matches nested
+  in subfolders.
 
 
 ## 1.0.0 (2018-08-15)
