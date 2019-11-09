@@ -25,6 +25,7 @@ setup(
     install_requires = [
         'adal',
         'beautifulsoup4',
+        'boxsdk[jwt]',
         'google-auth',
         'lxml',
         'kitchen',
@@ -39,6 +40,7 @@ setup(
         'console_scripts': [
             'odm=odm.libexec.wrapper:main',
             'gdm=odm.libexec.wrapper:main',
+            'bm=odm.libexec.wrapper:main',
         ]
     },
     include_package_data = True,

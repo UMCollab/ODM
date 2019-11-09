@@ -21,6 +21,8 @@ def main():
         cmd = 'odm'
     elif cmd.startswith('gdm'):
         cmd = 'gdm'
+    elif cmd.startswith('bm'):
+        cmd = 'bm'
     else:
         print('Unsupported/unknown wrapper "{}"'.format(sys.argv[0]), file = sys.stderr)
         sys.exit(1)

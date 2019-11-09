@@ -12,6 +12,7 @@ import sys
 
 import yaml
 
+import boxsdk
 from kitchen.text.converters import getwriter
 
 from odm import googledriveclient, onedriveclient
@@ -65,6 +66,16 @@ class CLI:
             self.client = googledriveclient.GoogleDriveClient(self.config)
         elif client == 'microsoft':
             self.client = onedriveclient.OneDriveClient(self.config)
+        elif client == 'box':
+            auth = boxsdk.JWTAuth(
+                client_id = self.config['box']['clientID'],
+                client_secret = self.config['box']['clientSecret'],
+                enterprise_id = self.config['box']['enterpriseID'],
+                jwt_key_id = self.config['box']['appAuth']['publicKeyID'],
+                rsa_private_key_data = self.config['box']['appAuth']['privateKey'],
+                rsa_private_key_passphrase = self.config['box']['appAuth']['passphrase'],
+            )
+            self.client = boxsdk.Client(auth)
 
     @staticmethod
     def writer_wrap(caller_sys):
