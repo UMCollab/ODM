@@ -6,9 +6,12 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import calendar
+import dateutil
 import json
 import os
 import sys
+import time
 
 import odm.cli
 
@@ -25,7 +28,7 @@ def main():
 
     user_clients = {}
 
-    if cli.args.action == 'download-items':
+    if cli.args.action in ['download-items', 'list-items']:
         for item_id in metadata['items']:
             item = metadata['items'][item_id]
             if item['type'] == 'folder':
@@ -38,6 +41,11 @@ def main():
                 while parent['id'] != '0':
                     item_path = '/'.join([parent['name'], item_path])
                     parent = metadata['items'][parent['parent']['id']]
+
+            if cli.args.action == 'list-items':
+                print(item_path)
+                continue
+
             cli.logger.info('Working on %s', item_path)
             item_path = '/'.join([destdir, item_path])
 
@@ -55,6 +63,16 @@ def main():
 
             with open(item_path, 'wb') as f:
                 user_clients[item['owned_by']['id']].file(item['id']).download_to(f)
+
+            os.utime(
+                item_path,
+                (
+                    time.time(),
+                    calendar.timegm(
+                        dateutil.parser.parse(item['modified_at']).timetuple()
+                    )
+                )
+            )
 
     else:
         print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
