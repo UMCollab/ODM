@@ -17,6 +17,7 @@ from oauthlib.oauth2 import BackendApplicationClient
 
 from odm.version import VERSION
 
+
 class OneDriveSession(requests_oauthlib.OAuth2Session):
     def __init__(self, domain, ms_config, timeout, **kwargs):
         self.baseurl = 'https://graph.microsoft.com/v1.0/'

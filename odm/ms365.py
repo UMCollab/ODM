@@ -463,7 +463,8 @@ class DriveFolder(DriveItem):
                 if child['name'] == name:
                     return child
 
-        result = self.client.msgraph.get(u'drives/{}/items/{}:/{}:/'.format(
+        result = self.client.msgraph.get(
+            u'drives/{}/items/{}:/{}:/'.format(
                 self.raw['parentReference']['driveId'],
                 self.raw['id'],
                 quote(name.encode('utf-8')),

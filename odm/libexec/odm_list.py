@@ -23,7 +23,25 @@ import odm.ms365
 
 def main():
     odm.cli.CLI.writer_wrap(sys)
-    cli = odm.cli.CLI(['--filetree', '--upload-user', '--upload-group', '--upload-path', '--domain-map', '--length', '--split-prefix', '--limit', '--exclude', '--diff', 'file', 'action'], ['--skip-permissions'])
+    cli = odm.cli.CLI(
+        [
+            '--filetree',
+            '--upload-user',
+            '--upload-group',
+            '--upload-path',
+            '--domain-map',
+            '--length',
+            '--split-prefix',
+            '--limit',
+            '--exclude',
+            '--diff',
+            'file',
+            'action',
+        ],
+        [
+            '--skip-permissions',
+        ]
+    )
     client = cli.client
 
     ts_start = datetime.datetime.now()
@@ -325,40 +343,40 @@ def main():
         split = 0
 
         for item_id in metadata['items']:
-	    item = metadata['items'][item_id]
-	    if 'file' not in item:
-		continue
+            item = metadata['items'][item_id]
+            if 'file' not in item:
+                continue
 
-	    item['odm_split'] = [split]
+            item['odm_split'] = [split]
 
-	    while 'id' in item['parentReference']:
-		item =  metadata['items'][item['parentReference']['id']]
-		item['odm_split'] = set(item.get('odm_split', [])).union([split])
+            while 'id' in item['parentReference']:
+                item = metadata['items'][item['parentReference']['id']]
+                item['odm_split'] = set(item.get('odm_split', [])).union([split])
 
-	    count += 1
-	    if count >= length:
-		split += 1
-		count = 0
+            count += 1
+            if count >= length:
+                split += 1
+                count = 0
 
-	for i in range(0, split + 1):
-	    fname = '{}{:0{align}d}.json'.format(
-		split_prefix,
-		i,
-		align = len(str(split))
-	    )
+        for i in range(0, split + 1):
+            fname = '{}{:0{align}d}.json'.format(
+                split_prefix,
+                i,
+                align = len(str(split))
+            )
             cli.logger.debug(u'Saving list %d to %s', i, fname)
 
-	    output = {
-		'items': {}
-	    }
-	    for item_id in metadata['items']:
-		item = metadata['items'][item_id]
-		if 'odm_split' not in item or i in item['odm_split']:
-		    output['items'][item_id] = copy(item)
-		    output['items'][item_id].pop('odm_split', None)
+            output = {
+                'items': {}
+            }
+            for item_id in metadata['items']:
+                item = metadata['items'][item_id]
+                if 'odm_split' not in item or i in item['odm_split']:
+                    output['items'][item_id] = copy(item)
+                    output['items'][item_id].pop('odm_split', None)
 
-	    with open(fname, 'w') as f:
-		json.dump(output, f, indent = 2)
+            with open(fname, 'w') as f:
+                json.dump(output, f, indent = 2)
 
         cli.logger.info(u'Split %s into %d chunks of %d', cli.args.file, split + 1, length)
 
