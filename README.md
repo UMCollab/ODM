@@ -1,9 +1,9 @@
 # ODM
 
 ODM is a set of tools for administratively downloading content from
-OneDrive to a local directory tree without the involvement of the end
-user. It also includes tools for administratively uploading local
-files to OneDrive or Google Drive.
+OneDrive or Box to a local directory tree without the involvement of
+the end user. It also includes tools for administratively uploading
+local files to OneDrive or Google Drive.
 
 As a set of relatively low-level tools, ODM is not designed to be a
 turnkey solution for migrating data. Some examples of how you might
@@ -11,7 +11,7 @@ glue these tools together are included in the contrib directory.
 
 ODM has been used at the University of Michigan for several multi-TiB
 migrations from OneDrive to Google Drive, and an ~35 TiB migration
-between different Microsoft 365 tenants.
+of 27K users between different Microsoft 365 tenants.
 
 ## Setting up your environment
 
