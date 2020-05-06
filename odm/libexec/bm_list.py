@@ -13,7 +13,21 @@ import os
 import sys
 import time
 
+from hashlib import sha1
+
 import odm.cli
+
+
+def _hash_file(path):
+    h = sha1()
+    with open(path, 'rb') as f:
+        while True:
+            block = f.read(64 * 1024)
+            if block:
+                h.update(block)
+            else:
+                break
+    return h.hexdigest()
 
 
 def main():
@@ -27,8 +41,9 @@ def main():
     destdir = cli.args.filetree.rstrip('/') if cli.args.filetree else '/var/tmp'
 
     user_clients = {}
+    retval = 0
 
-    if cli.args.action in ['download-items', 'list-items']:
+    if cli.args.action in ['download-items', 'list-items', 'verify-items']:
         for item_id in metadata['items']:
             item = metadata['items'][item_id]
             if item['type'] == 'folder':
@@ -50,8 +65,20 @@ def main():
             item_path = '/'.join([destdir, item_path])
 
             if os.path.exists(item_path):
-                # FIXME: verify content
-                cli.logger.debug('%s already exists, skipping', item_path)
+                digest = None
+                if 'sha1' in item:
+                    digest = _hash_file(item_path)
+                if item.get('sha1') == digest:
+                    cli.logger.debug('%s successfully verified', item_path)
+                    continue
+                elif digest:
+                    cli.logger.info('%s has the wrong hash: expected %s, got %s', item_path, item['sha1'], digest)
+                    if cli.args.action == 'verify-items':
+                        retval = 1
+                        continue
+            elif cli.args.action == 'verify-items':
+                cli.logger.info('%s does not exist', item_path)
+                retval = 1
                 continue
 
             filedir = os.path.dirname(item_path)
@@ -73,6 +100,14 @@ def main():
                     )
                 )
             )
+
+            if 'sha1' in item:
+                digest = _hash_file(item_path)
+                if digest != item['sha1']:
+                    cli.logger.warn('%s has the wrong post-download hash: expected %s, got %s', item_path, item['sha1'], digest)
+                    retval = 1
+
+        sys.exit(retval)
 
     else:
         print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
