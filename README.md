@@ -34,6 +34,8 @@ permissions and a client certificate.
 The gdm command requires credentials for an authorized Google service
 account.
 
+The bm command requires credentials for an authorized Box application.
+
 ### Azure AD 2.0
 
 * Register your client at https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
@@ -78,6 +80,24 @@ account.
     * Click `Manage API client access`
     * Enter the client ID and authorize it for
       `https://www.googleapis.com/auth/drive`
+
+### Box Application
+
+* Create an application at https://account.box.com/developers/services
+    * Custom App
+    * OAuth 2.0 with JWT (Server Authentication)
+    * Give it a name
+* Generate an RSA keypair
+* https://developer.box.com/guides/api-calls/suppress-notifications/
+* Grant it access to your domain
+    * Application Access: Enterprise
+    * Application Scopes:
+        - Read and write all files and folders in Box
+        - Manage users
+        - Manage groups
+        - Manage enterprise properties
+    * Advanced Features:
+        - Perform Actions As Users
 
 ## Downloading from OneDrive
 
