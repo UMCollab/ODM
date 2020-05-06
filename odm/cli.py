@@ -75,7 +75,13 @@ class CLI:
                 rsa_private_key_data = self.config['box']['appAuth']['privateKey'],
                 rsa_private_key_passphrase = self.config['box']['appAuth']['passphrase'],
             )
-            self.client = boxsdk.Client(auth)
+            session = boxsdk.session.session.AuthorizedSession(
+                auth,
+                default_headers = {
+                    'Box-Notifications': 'off',
+                }
+            )
+            self.client = boxsdk.Client(auth, session)
 
     @staticmethod
     def writer_wrap(caller_sys):
