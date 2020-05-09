@@ -14,6 +14,8 @@ from hashlib import sha1
 
 import odm.cli
 
+from odm.util import chunky_path
+
 
 def _hash_file(path):
     h = sha1()
@@ -47,12 +49,13 @@ def main():
 
             item_path = ''
             if item['id'] != '0':
-                item_path = item['name']
+                item_path_elems = [item['name']]
                 parent = metadata['items'][item['parent']['id']]
                 while parent['id'] != '0':
-                    item_path = '/'.join([parent['name'], item_path])
+                    item_path_elems.append(parent['name'])
                     parent = metadata['items'][parent['parent']['id']]
-
+                item_path_elems.reverse()
+                item_path = '/'.join([x for y in item_path_elems for x in chunky_path(y)])
             if cli.args.action == 'list-items':
                 print(item_path)
                 continue

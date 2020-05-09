@@ -25,3 +25,19 @@ class ChunkyFile():
             self.f.close()
 
         return ret
+
+
+def chunky_path(name):
+    path = []
+    while len(name.encode('utf-8')) > 255:
+        # Many Unix filesystems only allow filenames <= 255 bytes. Find the
+        # longest string that will fit in 255 bytes once encoded.
+        for j in range(0, len(name)):
+            if len(name[:j].encode('utf-8')) > 255:
+                j -= 1
+                break
+        path.append(name[:j])
+        name = name[j:]
+    path.append(name)
+
+    return path

@@ -36,7 +36,7 @@ def main():
         expanded = set()
         seen = set(['0'])
         while expanded != seen:
-            for key in items.keys():
+            for key in list(items.keys()):
                 item = items[key]
                 if item.type == 'folder' and item.id not in expanded:
                     for child in item.get_items(fields = ['id', 'name', 'type', 'size', 'modified_at', 'parent', 'owned_by', 'sha1']):

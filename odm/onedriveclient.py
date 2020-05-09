@@ -13,6 +13,7 @@ import requests_toolbelt
 from bs4 import BeautifulSoup
 
 from odm import inkml, onedrivesession, quickxorhash, sharepointsession
+from odm.util import chunky_path
 
 
 KETSUBAN = '''
@@ -120,23 +121,15 @@ class OneDriveClient:
         while 'id' in items[item_id]['parentReference']:
             name = items[item_id]['name']
 
-            i = 0
-            while fs_safe and len(name.encode('utf-8')) > 255:
-                # Many Unix filesystems only allow filenames <= 255 bytes. Find
-                # the longest string that will fit in 255 bytes once encoded.
-                for j in range(0, len(name)):
-                    if len(name[:j].encode('utf-8')) > 255:
-                        j -= 1
-                        break
-                # Add it as a separate dir and remove it from the name
-                path.insert(i, name[:j])
-                i += 1
-                name = name[j:]
-
-            path.insert(i, name)
+            if fs_safe:
+                chunks = chunky_path(name)
+                chunks.reverse()
+                path.extend(chunks)
+            else:
+                path.append(name)
             item_id = items[item_id]['parentReference']['id']
-
         if path:
+            path.reverse()
             return '/'.join(path)
         return '/'
 
