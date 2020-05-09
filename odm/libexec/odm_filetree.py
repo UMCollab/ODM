@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import datetime
 import os
@@ -15,7 +12,6 @@ import odm.ms365
 
 
 def main():
-    odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['path', 'action', '--upload-user', '--upload-group', '--upload-path'], 'microsoft')
     client = cli.client
     dir_map = {}
@@ -46,11 +42,11 @@ def main():
 
         dir_map['.'] = upload_dir
 
-        for root, dirs, files in os.walk(unicode(cli.args.path, 'utf-8')):
+        for root, dirs, files in os.walk(cli.args.path):
             parent = os.path.relpath(root, cli.args.path)
             for dname in dirs:
                 relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
-                cli.logger.info(u'Working on folder %s', relpath)
+                cli.logger.info('Working on folder %s', relpath)
                 if dir_map[parent]:
                     dir_map[relpath] = dir_map[parent].get_folder(dname, cli.args.action == 'upload')
                 else:
@@ -62,7 +58,7 @@ def main():
                 stat = os.stat(fpath)
                 size += stat.st_size
                 relpath = os.path.relpath(fpath, cli.args.path)
-                cli.logger.info(u'Working on file %s', relpath)
+                cli.logger.info('Working on file %s', relpath)
                 if cli.args.action == 'upload':
                     attempt = 0
                     result = False
@@ -70,17 +66,17 @@ def main():
                         attempt += 1
                         result = dir_map[parent].upload_file(fpath, fname)
                     if not result:
-                        cli.logger.warning(u'Failed to upload %s', relpath)
+                        cli.logger.warning('Failed to upload %s', relpath)
                         retval = 1
                 elif dir_map[parent]:
                     existing = dir_map[parent].verify_file(fpath, fname)
                     if existing:
-                        cli.logger.info(u'Verified %s', relpath)
+                        cli.logger.info('Verified %s', relpath)
                     else:
-                        cli.logger.warning(u'Failed to verify %s', relpath)
+                        cli.logger.warning('Failed to verify %s', relpath)
                         retval = 1
                 else:
-                    cli.logger.warning(u'Failed to verify %s: parent folder does not exist', relpath)
+                    cli.logger.warning('Failed to verify %s: parent folder does not exist', relpath)
                     retval = 1
 
         cli.logger.info(

@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import logging
 import random
@@ -64,7 +61,7 @@ class SharepointSession(requests.Session):
                 requests.exceptions.ReadTimeout,
                 requests.exceptions.ConnectionError,
             ) as e:
-                self.logger.info(u'Retryable requests error', exc_info=e)
+                self.logger.info('Retryable requests error', exc_info=e)
             else:
                 if result.status_code in (400, 500):
                     self.logger.info(result.content)
@@ -82,7 +79,7 @@ class SharepointSession(requests.Session):
                 raise(requests.exceptions.RetryError('retries unavailable with file-like data'))
 
             if attempt < max_attempts:
-                self.logger.info('Sleeping for {} seconds before retrying'.format(delay))
+                self.logger.info('Sleeping for %d seconds before retrying', delay)
                 time.sleep(float(delay))
 
         raise(requests.exceptions.RetryError('maximum retries exceeded'))

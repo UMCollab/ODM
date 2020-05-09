@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import argparse
 import logging
@@ -13,7 +10,6 @@ import sys
 import yaml
 
 import boxsdk
-from kitchen.text.converters import getwriter
 
 from odm import googledriveclient, onedriveclient
 
@@ -82,9 +78,3 @@ class CLI:
                 }
             )
             self.client = boxsdk.Client(auth, session)
-
-    @staticmethod
-    def writer_wrap(caller_sys):
-        writer = getwriter('utf8')
-        caller_sys.stdout = writer(caller_sys.stdout)
-        caller_sys.stderr = writer(caller_sys.stderr)

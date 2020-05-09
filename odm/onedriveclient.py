@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import base64
 import logging
@@ -145,24 +142,24 @@ class OneDriveClient:
 
     def verify_file(self, dest, size = None, file_hash = None, strict = True):
         if not os.path.exists(dest):
-            self.logger.info(u'{} does not exist'.format(dest))
+            self.logger.info('%s does not exist', dest)
             return False
 
         if strict and size is None and file_hash is None:
-            self.logger.debug(u'No size or hash provided for {}'.format(dest))
+            self.logger.debug('No size or hash provided for %s', dest)
             return False
 
         if size is not None:
             stat = os.stat(dest)
             if stat.st_size != size:
-                self.logger.info(u'{} is the wrong size: expected {}, got {}'.format(dest, size, stat.st_size))
+                self.logger.info('%s is the wrong size: expected %d, got %d', dest, size, stat.st_size)
                 return False
 
         if file_hash:
             h = quickxorhash.QuickXORHash()
             real_hash = h.hash_file(dest)
             if real_hash != file_hash:
-                self.logger.info(u'{} has the wrong hash: expected {}, got {}'.format(dest, file_hash, real_hash))
+                self.logger.info('%s has the wrong hash: expected %s, got %s', dest, file_hash, real_hash)
                 return False
 
         return True
@@ -262,7 +259,7 @@ class OneDriveClient:
                     div.append(img)
 
         if unexported:
-            self.logger.warning(u'{} contained unexportable data'.format(dest))
+            self.logger.warning('%s contained unexportable data', dest)
             with open(dest + '/data/ketsuban.png', 'wb') as f:
                 f.write(base64.b64decode(KETSUBAN))
 

@@ -15,15 +15,13 @@ of 27K users between different Microsoft 365 tenants.
 
 ## Setting up your environment
 
-This tool was mainly written and tested using Python 2.7 on Linux. Portions of
-the code were also tested under various versions of Python >= 3.4.
+ODM requires Python 3.6 or greater.
 
-For development, we recommend using a virtualenv to install ODM's Python
-dependencies.
+For development, we recommend using Pipenv to set up your environment.
 
-* Run `init.sh` to set up the virtualenv
+* Run `init.sh` to set up the checkout
 * When you want to use ODM, source env-setup.sh (`. env-setup.sh`) to set up the
-  necessary environment variables.
+  necessary aliases.
 
 ## Credentials
 

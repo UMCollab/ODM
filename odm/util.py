@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.

@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import calendar
 import datetime
@@ -22,7 +19,6 @@ import odm.ms365
 
 
 def main():
-    odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(
         [
             '--filetree',
@@ -85,12 +81,12 @@ def main():
                 )
 
             else:
-                cli.logger.critical(u'No upload destination specified')
+                cli.logger.critical('No upload destination specified')
                 sys.exit(1)
 
             upload_drive = upload_container.drive
             if not upload_drive:
-                cli.logger.critical(u'Unable to find destination drive for %s', upload_container)
+                cli.logger.critical('Unable to find destination drive for %s', upload_container)
                 sys.exit(1)
 
             upload_path = upload_drive.root
@@ -101,7 +97,7 @@ def main():
                         upload_path = upload_path.get_folder(tok, cli.args.action == 'upload')
 
             if cli.args.action in ['verify-upload', 'apply-permissions'] and not upload_path:
-                cli.logger.critical(u'Failed to verify destination folder')
+                cli.logger.critical('Failed to verify destination folder')
                 sys.exit(1)
 
             if cli.args.domain_map:
@@ -120,18 +116,18 @@ def main():
             item_path = client.expand_path(item_id, metadata['items'])
 
             if item_path in exclude:
-                cli.logger.debug(u'Skipping excluded item %s', item_path)
+                cli.logger.debug('Skipping excluded item %s', item_path)
                 continue
 
             if cli.args.limit:
                 if not item_path.startswith(cli.args.limit):
-                    cli.logger.debug(u'Skipping non-matching item %s', item_path)
+                    cli.logger.debug('Skipping non-matching item %s', item_path)
                     continue
 
-            cli.logger.debug(u'Working on %s', item_path)
+            cli.logger.debug('Working on %s', item_path)
 
             if 'malware' in item:
-                cli.logger.info(u'%s is tagged as malware and cannot be processed', item_path)
+                cli.logger.info('%s is tagged as malware and cannot be processed', item_path)
                 continue
 
             size += item['size']
@@ -154,9 +150,9 @@ def main():
             if cli.args.action == 'download':
                 verify_args['strict'] = False
                 if client.verify_file(**verify_args):
-                    cli.logger.info(u'Verified %s', dest)
+                    cli.logger.info('Verified %s', dest)
                 else:
-                    cli.logger.info(u'Downloading %s to %s', item_path, dest)
+                    cli.logger.info('Downloading %s to %s', item_path, dest)
                     attempt = 0
                     result = None
                     while attempt < 3 and result is None:
@@ -167,10 +163,10 @@ def main():
                             dest,
                         )
                         if digest and result != digest:
-                            cli.logger.info(u'%s has the wrong hash, retrying', dest)
+                            cli.logger.info('%s has the wrong hash, retrying', dest)
                             result = None
                     if result is None:
-                        cli.logger.warning(u'Failed to download %s', dest)
+                        cli.logger.warning('Failed to download %s', dest)
                         retval = 1
                     else:
                         os.utime(dest, (
@@ -182,9 +178,9 @@ def main():
 
             elif cli.args.action == 'verify' and digest:
                 if client.verify_file(**verify_args):
-                    cli.logger.info(u'Verified %s', dest)
+                    cli.logger.info('Verified %s', dest)
                 else:
-                    cli.logger.warning(u'Failed to verify %s', dest)
+                    cli.logger.warning('Failed to verify %s', dest)
                     retval = 1
 
             elif cli.args.action in ('upload', 'verify-upload', 'apply-permissions'):
@@ -192,7 +188,7 @@ def main():
                     # No permissions to apply, don't waste time
                     continue
 
-                cli.logger.info(u'Working on %s', dest)
+                cli.logger.info('Working on %s', dest)
 
                 steps = []
                 # Find parents by tracing up through references
@@ -210,18 +206,18 @@ def main():
                     step_path = client.expand_path(step['id'], metadata['items'])
                     parent = metadata['items'][step['parentReference']['id']]
                     if parent['upload_id'] == 'skip':
-                        cli.logger.debug(u'Skipping descendant %s', step_path)
+                        cli.logger.debug('Skipping descendant %s', step_path)
                         step['upload_id'] = 'skip'
                         continue
 
                     if parent['upload_id'] == 'failed':
-                        cli.logger.info(u'Failed to verify %s: parent does not exist', step_path)
+                        cli.logger.info('Failed to verify %s: parent does not exist', step_path)
                         step['upload_id'] = 'failed'
                         continue
 
                     if 'package' in step:
                         if step['package']['type'] != 'oneNote':
-                            cli.logger.info(u'Skipping %s, unknown package type %s', step_path, step['package']['type'])
+                            cli.logger.info('Skipping %s, unknown package type %s', step_path, step['package']['type'])
                             step['upload_id'] = 'skip'
                             continue
 
@@ -229,7 +225,7 @@ def main():
                             step['upload_id'] = parent['upload_id'].get_notebook(step['name'], upload_container, cli.args.action == 'upload')
                         except TypeError:
                             step['upload_id'] = 'skip'
-                            cli.logger.error(u'Failed to create notebook %s', step_path)
+                            cli.logger.error('Failed to create notebook %s', step_path)
                             retval = 1
                             continue
 
@@ -243,7 +239,7 @@ def main():
                             step['upload_id'] = parent['upload_id'].get_folder(step['name'], cli.args.action == 'upload')
                         except TypeError:
                             step['upload_id'] = 'skip'
-                            cli.logger.error(u'Failed to create folder %s', step_path)
+                            cli.logger.error('Failed to create folder %s', step_path)
                             retval = 1
                             continue
 
@@ -260,15 +256,15 @@ def main():
                                 step['upload_id'] = parent['upload_id'].upload_file(dest, step['name'])
                             if not step['upload_id']:
                                 step['upload_id'] = 'failed'
-                                cli.logger.error(u'Failed to upload %s', step_path)
+                                cli.logger.error('Failed to upload %s', step_path)
                                 retval = 1
                                 continue
                         else:
                             step['upload_id'] = parent['upload_id'].verify_file(dest, step['name'])
                             if step['upload_id']:
-                                cli.logger.info(u'Verified %s', step_path)
+                                cli.logger.info('Verified %s', step_path)
                             else:
-                                cli.logger.warning(u'Failed to verify %s', step_path)
+                                cli.logger.warning('Failed to verify %s', step_path)
                                 retval = 1
 
                     # FIXME: what should we do about missing users?
@@ -276,15 +272,15 @@ def main():
                     if apply_permissions and 'upload_id' in step and 'permissions' in step:
                         for perm in step['permissions']:
                             if 'link' in perm:
-                                cli.logger.info(u'Skipping %s scoped shared link', perm['link']['scope'])
+                                cli.logger.info('Skipping %s scoped shared link', perm['link']['scope'])
                                 continue
 
                             if 'owner' in perm['roles']:
-                                cli.logger.debug(u'Skipping owner permission')
+                                cli.logger.debug('Skipping owner permission')
                                 continue
 
                             if 'email' not in perm['grantedTo']['user']:
-                                cli.logger.info(u'Skipping permission with no email: %s', perm['grantedTo']['user'].get('displayName'))
+                                cli.logger.info('Skipping permission with no email: %s', perm['grantedTo']['user'].get('displayName'))
                                 continue
 
                             (user, domain) = perm['grantedTo']['user']['email'].split('@')
@@ -292,14 +288,14 @@ def main():
                                 domain = domain_map[domain]
 
                             try:
-                                cli.logger.info(u'Applying permissions for %s@%s', user, domain)
+                                cli.logger.info('Applying permissions for %s@%s', user, domain)
                                 step['upload_id'].share(
                                     '{}@{}'.format(user, domain),
                                     perm['roles'],
                                 )
                             except AttributeError:
                                 # FIXME: It would be better to implement this
-                                cli.logger.info(u'Skipping permission on file uploaded via SharePoint')
+                                cli.logger.info('Skipping permission on file uploaded via SharePoint')
 
                     # Try to keep memory usage under control by pruning leaves
                     # once they're processed.
@@ -316,7 +312,7 @@ def main():
         else:
             delta_msg = 'elapsed time {!s}'.format(datetime.datetime.now() - ts_start)
 
-        cli.logger.info(u'%.2f MiB across %d items, %s', size / (1024 ** 2), count, delta_msg)
+        cli.logger.info('%.2f MiB across %d items, %s', size / (1024 ** 2), count, delta_msg)
 
     elif cli.args.action == 'clean-filetree':
         fullpaths = [client.expand_path(x, metadata['items'], True) for x in metadata['items'] if 'file' in metadata['items'][x]]
@@ -326,8 +322,8 @@ def main():
                 relfpath = '/'.join([relpath, fname])
                 if relfpath[:2] == './':
                     relfpath = relfpath[2:]
-                if unicode(relfpath, 'utf-8') not in fullpaths:
-                    cli.logger.info(u'Removing %s', relfpath)
+                if relfpath not in fullpaths:
+                    cli.logger.info('Removing %s', relfpath)
                     fpath = '/'.join([root, fname])
                     os.unlink(fpath)
 
@@ -364,7 +360,7 @@ def main():
                 i,
                 align = len(str(split))
             )
-            cli.logger.debug(u'Saving list %d to %s', i, fname)
+            cli.logger.debug('Saving list %d to %s', i, fname)
 
             output = {
                 'items': {}
@@ -378,10 +374,10 @@ def main():
             with open(fname, 'w') as f:
                 json.dump(output, f, indent = 2)
 
-        cli.logger.info(u'Split %s into %d chunks of %d', cli.args.file, split + 1, length)
+        cli.logger.info('Split %s into %d chunks of %d', cli.args.file, split + 1, length)
 
     else:
-        cli.logger.critical(u'Unsupported action %s', cli.args.action)
+        cli.logger.critical('Unsupported action %s', cli.args.action)
         sys.exit(1)
 
     sys.exit(retval)

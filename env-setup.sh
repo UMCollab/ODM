@@ -1,5 +1,8 @@
 #!/bin/bash
 
 hacking_dir=$(readlink -fn $(dirname "$BASH_SOURCE"))
-VIRTUAL_ENV_DISABLE_PROMPT=1
-. $hacking_dir/bin/python/bin/activate
+cd $hacking_dir
+pipenv run pip install -e .
+alias bm='pipenv run bm'
+alias gdm='pipenv run gdm'
+alias odm='pipenv run odm'

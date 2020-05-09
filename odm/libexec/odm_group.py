@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import json
 import sys
@@ -14,7 +11,6 @@ import odm.ms365
 
 
 def main():
-    odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['group', 'action', '--display-name', '--incremental', '--owners', '--members'], ['--private'])
     client = cli.client
     groupname = client.mangle_user(cli.args.group)
@@ -42,7 +38,7 @@ def main():
             info['site'] = group.site
             print(json.dumps(info, indent = 2))
         else:
-            cli.logger.critical(u'Group %s not found', groupname)
+            cli.logger.critical('Group %s not found', groupname)
 
     elif cli.args.action == 'list-members':
         print(json.dumps(group.members, indent = 2))
@@ -52,7 +48,7 @@ def main():
 
     elif cli.args.action == 'list-items':
         if not group.show():
-            cli.logger.critical(u'Group %s not found', groupname)
+            cli.logger.critical('Group %s not found', groupname)
             sys.exit(1)
 
         base = {
@@ -72,11 +68,11 @@ def main():
 
     elif cli.args.action == 'create-channel':
         if not group.show():
-            cli.logger.critical(u'Group %s not found', groupname)
+            cli.logger.critical('Group %s not found', groupname)
             sys.exit(1)
 
         if not cli.args.display_name:
-            cli.logger.critical(u'--display-name is required for channel creation')
+            cli.logger.critical('--display-name is required for channel creation')
             sys.exit(1)
 
         result = group.create_channel(cli.args.display_name)
@@ -84,11 +80,11 @@ def main():
 
     elif cli.args.action == 'teamify':
         if not group.show():
-            cli.logger.critical(u'Group %s not found', groupname)
+            cli.logger.critical('Group %s not found', groupname)
             sys.exit(1)
 
         if not group.ensure_team():
-            cli.logger.debug(u'Group %s is already a team', groupname)
+            cli.logger.debug('Group %s is already a team', groupname)
         else:
             print(json.dumps(group.raw['team'], indent = 2))
 

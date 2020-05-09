@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+pytest = "*"
+pytest-flake8 = "*"
+
+[requires]
+python_version = "3.6"
+
+[packages]
+adal = "*"
+beautifulsoup4 = "*"
+google-auth = "*"
+lxml = "*"
+python-dateutil = "*"
+pyyaml = "*"
+requests = "*"
+requests-oauthlib = "*"
+requests-toolbelt = "*"
+svgwrite = "*"
+
+[packages.boxsdk]
+extras = [ "jwt",]

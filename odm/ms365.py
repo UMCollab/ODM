@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import logging
 import os
@@ -63,7 +60,7 @@ class Container(object):
                 obj = drives[0]
 
                 if len(drives) > 1:
-                    self.logger.warning(u'Multiple drives found for %s, using the first one', self.name)
+                    self.logger.warning('Multiple drives found for %s, using the first one', self.name)
 
             self._drive = Drive(self.client, obj)
 
@@ -138,7 +135,7 @@ class Group(Container):
             self._id = None
         else:
             if len(search) > 1:
-                self.logger.warning(u'Multiple groups found for %s, using the first one', name)
+                self.logger.warning('Multiple groups found for %s, using the first one', name)
             self.raw = search[0]
             self._id = self.raw['id']
             self.show()
@@ -464,7 +461,7 @@ class DriveFolder(DriveItem):
                     return child
 
         result = self.client.msgraph.get(
-            u'drives/{}/items/{}:/{}:/'.format(
+            'drives/{}/items/{}:/{}:/'.format(
                 self.raw['parentReference']['driveId'],
                 self.raw['id'],
                 quote(name.encode('utf-8')),
@@ -491,7 +488,7 @@ class DriveFolder(DriveItem):
         # Invalidate cache
         self._children = None
 
-        self.logger.debug(u'Creating folder %s', name)
+        self.logger.debug('Creating folder %s', name)
         payload = {
             'name': name,
             'folder': {},
@@ -508,7 +505,7 @@ class DriveFolder(DriveItem):
             if 'package' not in child or child['package']['type'] != 'oneNote':
                 if not create:
                     return None
-                raise TypeError(u'{} already exists but is not a OneNote package'.format(name))
+                raise TypeError('{} already exists but is not a OneNote package'.format(name))
             return Notebook(self.client, child)
 
         if not create:
@@ -517,7 +514,7 @@ class DriveFolder(DriveItem):
         # Invalidate cache
         self._children = None
 
-        self.logger.debug(u'Creating notebook %s', name)
+        self.logger.debug('Creating notebook %s', name)
 
         notebook = container.create_notebook(name)
         if notebook.raw['parentReference']['id'] != self.raw['id'] or notebook.raw['name'] != name:
@@ -549,7 +546,7 @@ class DriveFolder(DriveItem):
         if stat.st_size != match['size']:
             return None
 
-        self.logger.info(u'Verified size of uploaded {}'.format(src))
+        self.logger.info('Verified size of uploaded %s', src)
 
         if 'hashes' not in match['file']:
             # Probably a OneNote file.
@@ -558,7 +555,7 @@ class DriveFolder(DriveItem):
         h = quickxorhash.QuickXORHash()
         fhash = h.hash_file(src)
         if fhash == match['file']['hashes']['quickXorHash']:
-            self.logger.info(u'Verified uploaded {}'.format(src))
+            self.logger.info('Verified uploaded %s', src)
             return match
 
         return None
@@ -566,7 +563,7 @@ class DriveFolder(DriveItem):
     def _upload_file_simple(self, src, base_url):
         with open(src, 'rb') as f:
             result = self.client.msgraph.put(
-                base_url + u'content',
+                base_url + 'content',
                 data = f,
             )
             result.raise_for_status()
@@ -585,7 +582,7 @@ class DriveFolder(DriveItem):
         }
 
         req_result = self.client.msgraph.post(
-            base_url + u'createUploadSession',
+            base_url + 'createUploadSession',
             json = payload
         )
         req_result.raise_for_status()
@@ -626,7 +623,7 @@ class DriveFolder(DriveItem):
         return DriveItem(self.client, result.json())
 
     def upload_file(self, src, name):
-        self.logger.debug(u'uploading {}'.format(src))
+        self.logger.debug('uploading %s', src)
 
         # No leading or trailing whitespace
         name = name.strip()
@@ -640,7 +637,7 @@ class DriveFolder(DriveItem):
         # if we do nothing the server returns "Bad request URL"
         safe_name = name.replace('&#', '&_#')
 
-        base_url = u'drives/{}/items/{}:/{}:/'.format(
+        base_url = 'drives/{}/items/{}:/{}:/'.format(
             self.raw['parentReference']['driveId'],
             self.raw['id'],
             quote(safe_name.encode('utf-8')),
@@ -711,7 +708,7 @@ class DriveFolder(DriveItem):
                 end = stat.st_size - 1
                 size = stat.st_size - start
 
-            self.logger.debug('uploading bytes {}-{}/{}'.format(start, end, stat.st_size))
+            self.logger.debug('uploading bytes %d-%d/%d', start, end, stat.st_size)
 
             data = ChunkyFile(src, start, size)
 

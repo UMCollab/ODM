@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
+#!/usr/bin/env python3
 
 import svgwrite
 

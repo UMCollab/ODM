@@ -18,6 +18,7 @@ setup(
     author = 'Ezekiel Hendrickson',
     author_email = 'ezekielh@umich.edu',
     license = 'MIT',
+    python_requires = '>=3.6',
     packages = [
         'odm',
         'odm.libexec',
@@ -28,7 +29,6 @@ setup(
         'boxsdk[jwt]',
         'google-auth',
         'lxml',
-        'kitchen',
         'python-dateutil',
         'pyyaml',
         'requests',

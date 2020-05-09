@@ -11,7 +11,7 @@ else
 fi
 
 cat > odm/version.py <<EOF
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 VERSION = '$version'
 EOF

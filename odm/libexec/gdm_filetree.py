@@ -1,10 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import datetime
 import os
@@ -14,7 +11,6 @@ import odm.cli
 
 
 def main():
-    odm.cli.CLI.writer_wrap(sys)
     cli = odm.cli.CLI(['path', 'action', '--upload-user', '--upload-path'], client = 'google')
     client = cli.client
     dir_map = {}
@@ -41,7 +37,7 @@ def main():
             parent = os.path.relpath(root, cli.args.path)
             for dname in dirs:
                 relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
-                cli.logger.info('Working on folder {}'.format(relpath))
+                cli.logger.info('Working on folder %s', relpath)
                 if cli.args.action == 'upload':
                     dir_map[relpath] = client.create_file(dname, dir_map[parent], folder = True)
                 elif dir_map[parent]:
@@ -58,7 +54,7 @@ def main():
                 stat = os.stat(fpath)
                 size += stat.st_size
                 relpath = os.path.relpath(fpath, cli.args.path)
-                cli.logger.info('Working on file {}'.format(relpath))
+                cli.logger.info('Working on file %s', relpath)
                 if cli.args.action == 'upload':
                     attempt = 0
                     result = False
@@ -66,21 +62,21 @@ def main():
                         attempt += 1
                         result = client.upload_file(fpath, fname, dir_map[parent])
                     if not result:
-                        cli.logger.warning('Failed to upload {}'.format(relpath))
+                        cli.logger.warning('Failed to upload %s', relpath)
                         retval = 1
                 elif dir_map[parent]:
                     existing = client.verify_file(fpath, fname, dir_map[parent])
                     if existing:
                         if existing['verified']:
-                            cli.logger.info('Verified {}'.format(relpath))
+                            cli.logger.info('Verified %s', relpath)
                         else:
-                            cli.logger.warning('Failed to verify {}: digest mismatch'.format(relpath))
+                            cli.logger.warning('Failed to verify %s: digest mismatch', relpath)
                             retval = 1
                     else:
-                        cli.logger.warning('Failed to verify {}: not found'.format(relpath))
+                        cli.logger.warning('Failed to verify %s: not found', relpath)
                         retval = 1
                 else:
-                    cli.logger.warning('Failed to verify {}: parent folder does not exist'.format(relpath))
+                    cli.logger.warning('Failed to verify %s: parent folder does not exist', relpath)
                     retval = 1
 
         cli.logger.info('{:.2f} MiB across {} items, elapsed time {}'.format(
