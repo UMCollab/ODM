@@ -1,5 +1,7 @@
 *.pyc
 config.yaml
+odm.yaml
+odm.*.yaml
 bin/
 dist/
 oauth2service.json
