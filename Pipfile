@@ -21,6 +21,9 @@ requests = "*"
 requests-oauthlib = "*"
 requests-toolbelt = "*"
 svgwrite = "*"
+panflute = "*"
+pypandoc = "*"
+puremagic = "*"
 
 [packages.boxsdk]
 extras = [ "jwt",]

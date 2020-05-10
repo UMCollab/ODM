@@ -1,0 +1,20 @@
+<style type="text/css">
+    body {
+        font-family: Lato,'Helvetica Neue',Helvetica,Arial,sans-serif;
+        margin: 50px;
+        line-height: 1.6;
+    }
+    div.checklist ul { list-style-type: none; }
+    div.checked { opacity: .5; }
+    table, td { border: 1px solid lightgrey; }
+    table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+    td { height: 1em; padding: 10px; }
+    a {
+        text-decoration: none;
+        color: #1a74ba;
+    }
+    .font-size-verylarge { font-size: 2.14em; }
+    .font-size-large { font-size: 1.57em; }
+    .font-size-medium { font-size: 1em; }
+    .font-size-small { font-size: .8em; }
+</style>

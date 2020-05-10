@@ -222,6 +222,27 @@ gdm filetree /var/tmp/ezekielh verify --upload-user ezekielh --upload-path "Magi
   sped up quite a bit by installing
   [libqxh](https://github.com/flowerysong/quickxorhash).
 
+## Further Information On Box Note Exports
+
+* Box Notes are stored in a proprietary format with no public documentation or
+  well-defined transformation to another representation format. The converted
+  Note attempts to preserve the original structure as much as possible, but
+  I may have guessed wrong about what some parts of the data represent.
+
+* pandoc supports a wide range of output formats, but the primary output format
+  targeted during development was `html` so the fidelity of other formats may
+  be considerably lower. The produced HTML renders well in a browser or in
+  OneDrive, but does less well inside Google Docs.
+
+* Box Notes do not have an API, so only notes that exist in the user's drive
+  are transferred.
+
+* Box Notes do not have an API and comments and annotations are not included in
+  the file data, so they are also not included in the converted output.
+
+* Box Notes contain metadata about the author(s) of various parts of the Note.
+  No attempt is made to preserve this metadata or present it to the user.
+
 ## Further Information On OneNote Exports
 
 * Most of ODM's magic is like the wardrobe to Narnia. OneNote exports are more
