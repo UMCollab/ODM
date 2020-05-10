@@ -12,6 +12,11 @@ import odm.cli
 
 def main():
     cli = odm.cli.CLI(['path', 'action', '--upload-user', '--upload-path'], client = 'google')
+
+    if not cli.args.upload_user:
+        print('No upload user specified.', file = sys.stderr)
+        sys.exit(1)
+
     client = cli.client
     dir_map = {}
 
