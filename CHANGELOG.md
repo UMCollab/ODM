@@ -1,3 +1,15 @@
+## 2.1.0 (unreleased)
+
+### Features
+- Support for downloading from Box.
+
+### Incompatible changes
+- Dropped support for Python < 3.6.
+
+### Bugfixes
+- gdm will no longer attempt to upload files to a user named 'none' when
+  no `--upload-user` is specified.
+
 ## 2.0.0 (2019-09-19)
 
 ### Features
