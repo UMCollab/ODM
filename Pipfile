@@ -24,6 +24,7 @@ svgwrite = "*"
 panflute = "*"
 pypandoc = "*"
 puremagic = "*"
+lmdb = "*"
 
 [packages.boxsdk]
 extras = [ "jwt",]

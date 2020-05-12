@@ -28,6 +28,7 @@ setup(
         'beautifulsoup4',
         'boxsdk[jwt]',
         'google-auth',
+        'lmdb',
         'lxml',
         'panflute',
         'puremagic',

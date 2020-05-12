@@ -1,0 +1,23 @@
+#!/bin/bash
+
+rootdir=${rootdir:-~/boxusers}
+
+for uniqname in $(cat $1) ; do
+    dirname=${rootdir}/${uniqname:0:1}/$uniqname
+    [[ -e $dirname ]] || mkdir -p $dirname
+    if [[ -e $dirname/fetched ]]; then
+        echo "$uniqname already fetched"
+        continue
+    fi
+    (
+        flock -n 9 || exit 1
+        startts=$(date -Iseconds)
+        echo "Fetching metadata for $uniqname"
+        bm user $uniqname list-items --database $dirname/metadata.lmdb 2> $dirname/stderr.$startts
+        bm database $dirname/metadata.lmdb status || exit 0
+        touch $dirname/fetched
+    ) 9>>$dirname/lockfile
+    if [[ $? -ne 0 ]]; then
+        echo "$uniqname already locked"
+    fi
+done
