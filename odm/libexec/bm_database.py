@@ -36,7 +36,7 @@ def _write_chunk(logger, path, data, size):
 
 
 def main():
-    cli = odm.cli.CLI(['file', 'action', '--filetree', '--item-limit', '--size-limit', '--limit'], client='box')
+    cli = odm.cli.CLI(['file', 'action', '--filetree', '--item-limit', '--size-limit', '--limit'], ['--delta'], client='box')
     client = cli.client
 
     db = Database(cli.args.file)
@@ -45,6 +45,8 @@ def main():
         if db.read('_odm_meta').get('fully_expanded'):
             sys.exit(0)
         sys.exit(1)
+
+    color = db.read('_odm_meta')['color']
 
     if cli.args.action == 'dump':
         for key, val in db.iterate():
@@ -64,9 +66,15 @@ def main():
         count = 0
         chunk_keys = []
         for key, item in db.iterate():
-            if key.startswith('_odm_'):
+            if key.startswith('_odm_') or item['type'] == 'folder':
                 continue
-            if item['type'] == 'folder':
+
+            if item['_odm_color'] != color:
+                parent = db.read(item['parent']['id'])
+                if parent['_odm_color'] != color or item['_odm_color'] != parent['_odm_child_color']:
+                    continue
+
+            if cli.args.delta and not item['_odm_modified']:
                 continue
 
             chunk_keys.append(key)
@@ -78,6 +86,7 @@ def main():
                 chunk_keys = []
                 size = 0
         if chunk_keys:
+            split += 1
             _write_chunk(cli.logger, fname_tmpl.format(split), chunk_keys, size)
         cli.logger.info('Divided %d items into %d chunks', count, split)
         if db.iteration_finished:
@@ -93,19 +102,31 @@ def main():
 
     if cli.args.action in ['download-items', 'list-items', 'verify-items']:
         limit = set()
+
         if cli.args.limit:
             with open(cli.args.limit, 'rb') as f:
                 limit.update(json.load(f))
-                print(limit)
+
         for key, item in db.iterate():
             if key.startswith('_odm_'):
                 continue
+
+            if item['_odm_color'] != color:
+                parent = db.read(item['parent']['id'])
+                if parent['_odm_color'] != color or item['_odm_color'] != parent['_odm_child_color']:
+                    cli.logger.debug('%s was deleted', item['name'])
+                    # FIXME: deleted; we could delete it from disk as well
+                    continue
 
             if item['type'] == 'folder':
                 continue
 
             if limit and item['id'] not in limit:
                 continue
+
+            if cli.args.delta:
+                if item['_odm_color'] != color or not item.get('_odm_modified', True):
+                    continue
 
             item_path = ''
             if item['id'] != '0':
@@ -168,9 +189,8 @@ def main():
 
         sys.exit(retval)
 
-    else:
-        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
-        sys.exit(1)
+    print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
+    sys.exit(1)
 
 
 if __name__ == '__main__':

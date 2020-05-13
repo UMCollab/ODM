@@ -10,8 +10,9 @@ import lmdb
 
 
 class Database:
-    def __init__(self, path):
+    def __init__(self, path, debug=False):
         self.logger = logging.getLogger(__name__)
+        self.debug = debug
         self.path = path
         self.db = lmdb.open(
             path,
@@ -31,6 +32,8 @@ class Database:
         key = key.encode('utf-8')
         with self.db.begin() as txn:
             val = txn.get(key)
+            if self.debug:
+                self.logger.debug('Read %s: %s', key, val)
             if val:
                 return json.loads(val.decode('utf-8'))
         return {}
@@ -43,6 +46,8 @@ class Database:
             self.cursor_txn = None
 
     def _write(self, key, value):
+        if self.debug:
+            self.logger.critical('Writing %s: %s', key, value)
         with self.db.begin(write=True) as txn:
             txn.put(key, value)
 
@@ -73,6 +78,8 @@ class Database:
         self.cursor_txn = self.db.begin()
         self.cursor = self.cursor_txn.cursor()
         for key, value in self.cursor:
+            if self.debug:
+                self.logger.debug('Yielding %s: %s', key, value)
             yield (key.decode('utf-8'), json.loads(value.decode('utf-8')))
             if not self.cursor:
                 return
