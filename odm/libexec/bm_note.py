@@ -12,7 +12,7 @@ from odm.boxnote import BoxNote
 
 
 def main():
-    cli = odm.cli.CLI(['boxnote', 'format'], client = 'box')
+    cli = odm.cli.CLI(['boxnote', 'format'], client='box')
 
     note = BoxNote(cli.args.boxnote, cli.client)
     text = note.convert()

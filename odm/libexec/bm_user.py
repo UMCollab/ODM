@@ -12,7 +12,7 @@ from odm.db import Database
 
 
 def main():
-    cli = odm.cli.CLI(['user', 'action', '--database'], client = 'box')
+    cli = odm.cli.CLI(['user', 'action', '--database'], client='box')
     client = cli.client
 
     if '@' not in cli.args.user:
@@ -90,7 +90,7 @@ def main():
 
         db.update('_odm_meta', {'fully_expanded': True})
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         sys.exit(1)
 
 

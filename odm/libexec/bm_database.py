@@ -36,7 +36,7 @@ def _write_chunk(logger, path, data, size):
 
 
 def main():
-    cli = odm.cli.CLI(['file', 'action', '--filetree', '--item-limit', '--size-limit', '--limit'], client = 'box')
+    cli = odm.cli.CLI(['file', 'action', '--filetree', '--item-limit', '--size-limit', '--limit'], client='box')
     client = cli.client
 
     db = Database(cli.args.file)
@@ -169,7 +169,7 @@ def main():
         sys.exit(retval)
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         sys.exit(1)
 
 

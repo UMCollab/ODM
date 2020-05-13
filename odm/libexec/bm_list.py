@@ -11,7 +11,7 @@ from odm.db import Database
 
 
 def main():
-    cli = odm.cli.CLI(['file', 'database'], client = None)
+    cli = odm.cli.CLI(['file', 'database'], client=None)
 
     with open(cli.args.file, 'rb') as f:
         metadata = json.load(f)

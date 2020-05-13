@@ -55,7 +55,7 @@ class InkML:
             retval[chan] = value
         return retval
 
-    def save(self, dest, split = False):
+    def save(self, dest, split=False):
         real_dest = dest
         canvas = None
 

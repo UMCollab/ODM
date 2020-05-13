@@ -11,10 +11,10 @@ import odm.cli
 
 
 def main():
-    cli = odm.cli.CLI(['path', 'action', '--upload-user', '--upload-path'], client = 'google')
+    cli = odm.cli.CLI(['path', 'action', '--upload-user', '--upload-path'], client='google')
 
     if not cli.args.upload_user:
-        print('No upload user specified.', file = sys.stderr)
+        print('No upload user specified.', file=sys.stderr)
         sys.exit(1)
 
     client = cli.client
@@ -32,7 +32,7 @@ def main():
         parent = 'root'
         for tok in dest.split('/'):
             if cli.args.action == 'upload':
-                parent = client.create_file(tok, parent, folder = True)
+                parent = client.create_file(tok, parent, folder=True)
             else:
                 parent = client.find_file(tok, parent)
                 parent = parent['id'] if parent else None
@@ -44,7 +44,7 @@ def main():
                 relpath = os.path.relpath('/'.join((root, dname)), cli.args.path)
                 cli.logger.info('Working on folder %s', relpath)
                 if cli.args.action == 'upload':
-                    dir_map[relpath] = client.create_file(dname, dir_map[parent], folder = True)
+                    dir_map[relpath] = client.create_file(dname, dir_map[parent], folder=True)
                 elif dir_map[parent]:
                     existing = client.find_file(dname, dir_map[parent])
                     dir_map[relpath] = existing['id'] if existing else None
@@ -91,7 +91,7 @@ def main():
         ))
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         retval = 1
 
     sys.exit(retval)

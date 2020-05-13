@@ -15,24 +15,24 @@ from odm import googledriveclient, onedriveclient
 
 
 class CLI:
-    def __init__(self, args, flags = [], client = 'microsoft'):
+    def __init__(self, args, flags=[], client='microsoft'):
         parser = argparse.ArgumentParser()
         parser.add_argument(
             '-c', '--config',
-            help = 'Config file location',
-            default = '/etc/odm.yaml',
+            help='Config file location',
+            default='/etc/odm.yaml',
         )
         parser.add_argument(
             '-v', '--verbose',
-            help = 'Enable verbose output',
-            action = 'count',
-            default = 0,
+            help='Enable verbose output',
+            action='count',
+            default=0,
         )
         for arg in args:
             parser.add_argument(arg)
 
         for flag in flags:
-            parser.add_argument(flag, action = 'store_true')
+            parser.add_argument(flag, action='store_true')
 
         self.args = parser.parse_args()
 
@@ -67,17 +67,17 @@ class CLI:
             self.client = onedriveclient.OneDriveClient(self.config)
         elif client == 'box':
             auth = boxsdk.JWTAuth(
-                client_id = self.config['box']['clientID'],
-                client_secret = self.config['box']['clientSecret'],
-                enterprise_id = self.config['box']['enterpriseID'],
-                jwt_key_id = self.config['box']['appAuth']['publicKeyID'],
-                rsa_private_key_data = self.config['box']['appAuth']['privateKey'],
-                rsa_private_key_passphrase = self.config['box']['appAuth']['passphrase'],
+                client_id=self.config['box']['clientID'],
+                client_secret=self.config['box']['clientSecret'],
+                enterprise_id=self.config['box']['enterpriseID'],
+                jwt_key_id=self.config['box']['appAuth']['publicKeyID'],
+                rsa_private_key_data=self.config['box']['appAuth']['privateKey'],
+                rsa_private_key_passphrase=self.config['box']['appAuth']['passphrase'],
             )
             session = boxsdk.session.session.AuthorizedSession(
                 auth,
-                default_headers = {
+                default_headers={
                     'Box-Notifications': 'off',
-                }
+                },
             )
             self.client = boxsdk.Client(auth, session)

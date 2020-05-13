@@ -22,7 +22,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
         self.domain = domain
         self.ms_config = ms_config
         self.timeout = timeout
-        client = BackendApplicationClient(client_id = ms_config['client_id'])
+        client = BackendApplicationClient(client_id=ms_config['client_id'])
         kwargs['client'] = client
         super(OneDriveSession, self).__init__(**kwargs)
         # This is just so OAuth2Session.request() will call refresh_token()
@@ -37,11 +37,11 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
     def _fresh_token(self):
         self.logger.debug('Fetching fresh authorization token.')
         self.fetch_token(
-            token_url = 'https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.domain),
-            client_id = self.ms_config['client_id'],
-            client_secret = self.ms_config['client_secret'],
-            include_client_id = True,
-            scope = [
+            token_url='https://login.microsoftonline.com/{}/oauth2/v2.0/token'.format(self.domain),
+            client_id=self.ms_config['client_id'],
+            client_secret=self.ms_config['client_secret'],
+            include_client_id=True,
+            scope=[
                 'https://graph.microsoft.com/.default',
             ],
         )

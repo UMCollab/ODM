@@ -87,7 +87,7 @@ def main():
         )
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         retval = 1
 
     sys.exit(retval)

@@ -152,9 +152,9 @@ class BoxNote:
     def convert(self):
         doc = panflute.Doc(
             api_version=(1, 17, 5),
-            metadata = {
+            metadata={
                 'pagetitle': self.title,
-            }
+            },
         )
 
         doc.content.append(panflute.Header(panflute.Str(self.title)))

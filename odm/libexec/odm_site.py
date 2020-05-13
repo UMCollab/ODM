@@ -19,9 +19,9 @@ def main():
     if cli.args.action == 'show':
         result = site.show()
         if result:
-            print(json.dumps(result, indent = 2))
+            print(json.dumps(result, indent=2))
         else:
-            print('Site {} not found'.format(cli.args.site), file = sys.stderr)
+            print('Site {} not found'.format(cli.args.site), file=sys.stderr)
             sys.exit(1)
 
     elif cli.args.action == 'list-items':
@@ -35,19 +35,19 @@ def main():
 
         site.drive.delta(base)
 
-        print(json.dumps(base, indent = 2))
+        print(json.dumps(base, indent=2))
 
     elif cli.args.action == 'list-pages':
-        print(json.dumps(client.get_list('https://graph.microsoft.com/beta/sites/{}/pages'.format(site._id)), indent = 2))
+        print(json.dumps(client.get_list('https://graph.microsoft.com/beta/sites/{}/pages'.format(site._id)), indent=2))
 
     elif cli.args.action == 'list-lists':
-        print(json.dumps(site.lists, indent = 2))
+        print(json.dumps(site.lists, indent=2))
 
         for l in site.lists:
-            print(json.dumps(client.get_list('sites/{}/lists/{}/items'.format(site._id, l['id'])), indent = 2))
+            print(json.dumps(client.get_list('sites/{}/lists/{}/items'.format(site._id, l['id'])), indent=2))
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         sys.exit(1)
 
 

@@ -76,24 +76,24 @@ class GoogleDriveClient:
 
         return result
 
-    def find_item(self, name, parent = None):
+    def find_item(self, name, parent=None):
         query = "name = '{}' and trashed = false".format(name.replace("'", "\\'"))
         if parent:
             query = "{} and '{}' in parents".format(query, parent)
 
         response = self.request(
             'GET', 'drive/v3/files',
-            params = {'q': query, 'fields': 'files(id,md5Checksum,size)'},
+            params={'q': query, 'fields': 'files(id,md5Checksum,size)'},
         )
         return response
 
-    def find_file(self, name, parent = None):
+    def find_file(self, name, parent=None):
         existing = self.find_item(name, parent).json()
         if len(existing['files']) > 0:
             return existing['files'][0]
         return None
 
-    def create_file(self, name, parent = None, folder = False, mtime = None):
+    def create_file(self, name, parent=None, folder=False, mtime=None):
         existing = self.find_file(name, parent)
         if existing:
             return existing['id']
@@ -114,7 +114,7 @@ class GoogleDriveClient:
 
         return self.request(
             'POST', 'drive/v3/files',
-            json = payload
+            json=payload,
         ).json()['id']
 
     def verify_file(self, file_name, name, parent):
@@ -144,7 +144,7 @@ class GoogleDriveClient:
 
         if stat.st_size == 0:
             # Metadata-only creation
-            self.create_file(name, parent, mtime = mtime)
+            self.create_file(name, parent, mtime=mtime)
             return True
 
         existing = self.verify_file(file_name, name, parent)
@@ -158,23 +158,23 @@ class GoogleDriveClient:
                 'upload/drive/v3/files/{}'.format(
                     existing['id']
                 ),
-                params = {
+                params={
                     'uploadType': 'resumable',
                 },
-                headers = {'X-Upload-Content-Length': str(stat.st_size)},
-                json = {
+                headers={'X-Upload-Content-Length': str(stat.st_size)},
+                json={
                     'modifiedTime': mtime,
-                }
+                },
             )
         else:
             upload = self.request(
                 'POST',
                 'upload/drive/v3/files',
-                params = {'uploadType': 'resumable'},
-                headers = {
+                params={'uploadType': 'resumable'},
+                headers={
                     'X-Upload-Content-Length': str(stat.st_size)
                 },
-                json = {
+                json={
                     'name': name,
                     'parents': [
                         parent,
@@ -191,7 +191,7 @@ class GoogleDriveClient:
                 try:
                     result = self.request(
                         'PUT', path,
-                        headers = {'Content-Range': 'bytes */{}'.format(stat.st_size)}
+                        headers={'Content-Range': 'bytes */{}'.format(stat.st_size)},
                     )
                 except requests.exceptions.RequestException as e:
                     self.logger.warning(e)
@@ -213,8 +213,8 @@ class GoogleDriveClient:
                 try:
                     result = self._request(
                         'PUT', path,
-                        data = f,
-                        headers = {
+                        data=f,
+                        headers={
                             'Content-Range': 'bytes {}-{}/{}'.format(
                                 seek,
                                 stat.st_size - 1,

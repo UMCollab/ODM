@@ -20,10 +20,10 @@ def main():
     user = odm.ms365.User(cli.client, username)
 
     if cli.args.action == 'show':
-        print(json.dumps(user.show(), indent = 2))
+        print(json.dumps(user.show(), indent=2))
 
     elif cli.args.action == 'list-drives':
-        print(json.dumps(user.list_drives(), indent = 2))
+        print(json.dumps(user.list_drives(), indent=2))
 
     elif cli.args.action == 'list-items':
         if not user.show():
@@ -38,9 +38,9 @@ def main():
             with open(cli.args.incremental, 'rb') as f:
                 base = json.load(f)
 
-        user.drive.delta(base, include_permissions = cli.args.include_permissions)
+        user.drive.delta(base, include_permissions=cli.args.include_permissions)
 
-        print(json.dumps(base, indent = 2))
+        print(json.dumps(base, indent=2))
 
     elif cli.args.action == 'list-notebooks':
         # This consistently throws a 403 for some users
@@ -48,7 +48,7 @@ def main():
             notebooks = client.list_notebooks(cli.args.user)
         except HTTPError:
             notebooks = []
-        print(json.dumps({'notebooks': notebooks}, indent = 2))
+        print(json.dumps({'notebooks': notebooks}, indent=2))
 
     else:
         cli.logger.critical(u'Unsupported action %s', cli.args.action)

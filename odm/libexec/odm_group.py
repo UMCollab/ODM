@@ -36,15 +36,15 @@ def main():
         info = group.show()
         if info:
             info['site'] = group.site
-            print(json.dumps(info, indent = 2))
+            print(json.dumps(info, indent=2))
         else:
             cli.logger.critical('Group %s not found', groupname)
 
     elif cli.args.action == 'list-members':
-        print(json.dumps(group.members, indent = 2))
+        print(json.dumps(group.members, indent=2))
 
     elif cli.args.action == 'list-owners':
-        print(json.dumps(group.owners, indent = 2))
+        print(json.dumps(group.owners, indent=2))
 
     elif cli.args.action == 'list-items':
         if not group.show():
@@ -61,10 +61,10 @@ def main():
 
         group.drive.delta(base)
 
-        print(json.dumps(base, indent = 2))
+        print(json.dumps(base, indent=2))
 
     elif cli.args.action == 'list-channels':
-        print(json.dumps(group.channels, indent = 2))
+        print(json.dumps(group.channels, indent=2))
 
     elif cli.args.action == 'create-channel':
         if not group.show():
@@ -76,7 +76,7 @@ def main():
             sys.exit(1)
 
         result = group.create_channel(cli.args.display_name)
-        print(json.dumps(result, indent = 2))
+        print(json.dumps(result, indent=2))
 
     elif cli.args.action == 'teamify':
         if not group.show():
@@ -86,10 +86,10 @@ def main():
         if not group.ensure_team():
             cli.logger.debug('Group %s is already a team', groupname)
         else:
-            print(json.dumps(group.raw['team'], indent = 2))
+            print(json.dumps(group.raw['team'], indent=2))
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         sys.exit(1)
 
 

@@ -80,7 +80,7 @@ class Container(object):
 
         result = self.client.msgraph.post(
             '{}/{}/onenote/notebooks'.format(self._prefix, self._id),
-            json = payload,
+            json=payload,
         )
 
         if result.status_code == 409:
@@ -143,7 +143,7 @@ class Group(Container):
                 self.raw['team'] = self.client.get_list('teams/{}'.format(self._id))
 
     @classmethod
-    def create(cls, client, name, display_name, private = True, owners = [], members = []):
+    def create(cls, client, name, display_name, private=True, owners=[], members=[]):
         payload = {
             'mailNickname': name.split('@')[0],
             'displayName': display_name,
@@ -173,7 +173,7 @@ class Group(Container):
                 user = User(client, client.mangle_user(member))
                 payload['members@odata.bind'].append('https://graph.microsoft.com/v1.0/users/{}'.format(user.show()['id']))
 
-        result = client.msgraph.post('/groups', json = payload)
+        result = client.msgraph.post('/groups', json=payload)
         result.raise_for_status()
         return cls(client, name)
 
@@ -210,7 +210,7 @@ class Group(Container):
         }
         result = self.client.msgraph.post(
             'teams/{}/channels'.format(self._id),
-            json = payload,
+            json=payload,
         )
         result.raise_for_status()
         return result.json()
@@ -228,7 +228,7 @@ class Group(Container):
         }
         result = self.client.msgraph.put(
             'groups/{}/team'.format(self._id),
-            json = payload,
+            json=payload,
         )
         result.raise_for_status()
         self.raw['team'] = result.json()
@@ -305,7 +305,7 @@ class Drive(object):
     def __str__(self):
         return self.raw.get('id', 'None')
 
-    def delta(self, base, include_permissions = True):
+    def delta(self, base, include_permissions=True):
         include_delta = False
 
         if not self.raw:
@@ -392,12 +392,12 @@ class DriveItem(object):
                 self.raw['parentReference']['driveId'],
                 self.raw['id'],
             ),
-            json = payload,
+            json=payload,
         )
         result.raise_for_status()
         self.raw = result.json()
 
-    def move(self, new_parent, new_name, force = True):
+    def move(self, new_parent, new_name, force=True):
         payload = {}
         if new_parent:
             payload['parentReference'] = {
@@ -432,7 +432,7 @@ class DriveItem(object):
                 self.raw['parentReference']['driveId'],
                 self.raw['id'],
             ),
-            json = payload,
+            json=payload,
         )
         result.raise_for_status()
 
@@ -473,7 +473,7 @@ class DriveFolder(DriveItem):
 
         return result.json()
 
-    def get_folder(self, name, create = True):
+    def get_folder(self, name, create=True):
         child = self.get_child(name)
         if child:
             if 'folder' not in child:
@@ -495,11 +495,11 @@ class DriveFolder(DriveItem):
             '@microsoft.graph.conflictBehavior': 'replace',
         }
 
-        result = self.client.msgraph.post('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']), json = payload)
+        result = self.client.msgraph.post('drives/{}/items/{}/children'.format(self.raw['parentReference']['driveId'], self.raw['id']), json=payload)
         result.raise_for_status()
         return DriveFolder(self.client, result.json())
 
-    def get_notebook(self, name, container, create = True):
+    def get_notebook(self, name, container, create=True):
         child = self.get_child(name)
         if child:
             if 'package' not in child or child['package']['type'] != 'oneNote':
@@ -564,7 +564,7 @@ class DriveFolder(DriveItem):
         with open(src, 'rb') as f:
             result = self.client.msgraph.put(
                 base_url + 'content',
-                data = f,
+                data=f,
             )
             result.raise_for_status()
             return DriveItem(self.client, result.json())
@@ -583,7 +583,7 @@ class DriveFolder(DriveItem):
 
         req_result = self.client.msgraph.post(
             base_url + 'createUploadSession',
-            json = payload
+            json=payload
         )
         req_result.raise_for_status()
 
@@ -605,12 +605,12 @@ class DriveFolder(DriveItem):
             data = ChunkyFile(src, start, size)
             result = self.client.msgraph.put(
                 upload_url,
-                data = data,
-                headers = {
+                data=data,
+                headers={
                     'Content-Length': str(size),
                     'Content-Range': 'bytes {}-{}/{}'.format(start, end, stat.st_size),
                 },
-                timeout = 1200,
+                timeout=1200,
             )
             if result.status_code == 404:
                 self.logger.info('Invalid upload session')
@@ -677,7 +677,7 @@ class DriveFolder(DriveItem):
 
     def _upload_file_sharepoint_simple(self, client, src, upload_url):
         with open(src, 'rb') as f:
-            result = client.post(upload_url, data = f, timeout = 1200)
+            result = client.post(upload_url, data=f, timeout=1200)
         result.raise_for_status()
         return result.json()
 
@@ -722,7 +722,7 @@ class DriveFolder(DriveItem):
                 url = "{}/FinishUpload(uploadId=guid'{}', fileOffset={})".format(
                     upload_url, guid, start
                 )
-            result = client.post(url, data = data, timeout = 1200)
+            result = client.post(url, data=data, timeout=1200)
             result.raise_for_status()
 
             if remaining > chunk_size:

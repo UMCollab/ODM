@@ -307,7 +307,7 @@ def main():
 
         if cli.args.action == 'download-estimate':
             delta_msg = 'wild guess time {!s}'.format(
-                datetime.timedelta(seconds = int(count + (size / (24 * 1024 * 1024))))
+                datetime.timedelta(seconds=int(count + (size / (24 * 1024 * 1024))))
             )
         else:
             delta_msg = 'elapsed time {!s}'.format(datetime.datetime.now() - ts_start)
@@ -358,7 +358,7 @@ def main():
             fname = '{}{:0{align}d}.json'.format(
                 split_prefix,
                 i,
-                align = len(str(split))
+                align=len(str(split)),
             )
             cli.logger.debug('Saving list %d to %s', i, fname)
 
@@ -372,7 +372,7 @@ def main():
                     output['items'][item_id].pop('odm_split', None)
 
             with open(fname, 'w') as f:
-                json.dump(output, f, indent = 2)
+                json.dump(output, f, indent=2)
 
         cli.logger.info('Split %s into %d chunks of %d', cli.args.file, split + 1, length)
 

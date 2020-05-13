@@ -10,7 +10,7 @@ import sys
 
 def main():
     if len(sys.argv) < 2:
-        print('Usage: odm <command> [<args>]', file = sys.stderr)
+        print('Usage: odm <command> [<args>]', file=sys.stderr)
         sys.exit(1)
 
     cmd = os.path.basename(sys.argv[0])
@@ -21,7 +21,7 @@ def main():
     elif cmd.startswith('bm'):
         cmd = 'bm'
     else:
-        print('Unsupported/unknown wrapper "{}"'.format(sys.argv[0]), file = sys.stderr)
+        print('Unsupported/unknown wrapper "{}"'.format(sys.argv[0]), file=sys.stderr)
         sys.exit(1)
 
     # Allow -c <file> to occur before the subcommand
@@ -32,7 +32,7 @@ def main():
     try:
         subcommand = importlib.import_module('odm.libexec.{}_{}'.format(cmd, sys.argv[idx]))
     except ImportError:
-        print('Unsupported/unknown subcommand "{} {}"'.format(cmd, sys.argv[idx]), file = sys.stderr)
+        print('Unsupported/unknown subcommand "{} {}"'.format(cmd, sys.argv[idx]), file=sys.stderr)
         sys.exit(1)
 
     sys.argv[0] += ' ' + sys.argv[idx]

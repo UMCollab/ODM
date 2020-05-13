@@ -44,7 +44,7 @@ class OneDriveClient:
         page_result = None
 
         while not page_result:
-            page_result = self.msgraph.get(path, allow_redirects = False)
+            page_result = self.msgraph.get(path, allow_redirects=False)
 
             if page_result.status_code == 302:
                 return {
@@ -86,7 +86,7 @@ class OneDriveClient:
     def list_groups(self):
         return self.get_list('groups')['value']
 
-    def expand_path(self, item_id, items, fs_safe = False):
+    def expand_path(self, item_id, items, fs_safe=False):
         path = []
 
         while 'id' in items[item_id]['parentReference']:
@@ -104,7 +104,7 @@ class OneDriveClient:
             return '/'.join(path)
         return '/'
 
-    def verify_file(self, dest, size = None, file_hash = None, strict = True):
+    def verify_file(self, dest, size=None, file_hash=None, strict=True):
         if not os.path.exists(dest):
             self.logger.info('%s does not exist', dest)
             return False
@@ -128,7 +128,7 @@ class OneDriveClient:
 
         return True
 
-    def _download(self, url, dest, calculate_hash = False):
+    def _download(self, url, dest, calculate_hash=False):
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.makedirs(destdir, 0o0755)
@@ -138,7 +138,7 @@ class OneDriveClient:
             h = quickxorhash.QuickXORHash()
 
         try:
-            with self.msgraph.get(url, stream = True, timeout = self.config.get('timeout', 60) * 20) as r:
+            with self.msgraph.get(url, stream=True, timeout=self.config.get('timeout', 60) * 20) as r:
                 r.raise_for_status()
                 if r.headers['content-type'].startswith('multipart/'):
                     decoder = requests_toolbelt.MultipartDecoder.from_response(r)
@@ -147,7 +147,7 @@ class OneDriveClient:
                             f.write(part.content)
                 else:
                     with open(dest, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size = 1024 * 1024):
+                        for chunk in r.iter_content(chunk_size=1024 * 1024):
                             f.write(chunk)
                             if h is not None:
                                 h.update(bytearray(chunk))
@@ -205,8 +205,8 @@ class OneDriveClient:
             obj_file = '{}/data/{}.{}'.format(dest, obj_id, obj['data-attachment'])
             link = html.new_tag(
                 'a',
-                href = 'data/' + os.path.basename(obj_file),
-                download = obj['data-attachment']
+                href='data/' + os.path.basename(obj_file),
+                download=obj['data-attachment'],
             )
             link.append(obj['data-attachment'])
             self._download(obj['data'], obj_file)
@@ -219,7 +219,7 @@ class OneDriveClient:
                 unexported = True
                 if quirky:
                     # Add a visual indicator of missing data
-                    img = html.new_tag('img', src = 'data/ketsuban.png')
+                    img = html.new_tag('img', src='data/ketsuban.png')
                     div.append(img)
 
         if unexported:
@@ -229,7 +229,7 @@ class OneDriveClient:
 
         # Add InkML SVG, if it was generated
         for ink in converter.traces:
-            div = html.new_tag('div', style = "position:absolute;left:0px;top:0px;pointer-events:none")
+            div = html.new_tag('div', style='position:absolute;left:0px;top:0px;pointer-events:none')
             replaced = False
             if quirky:
                 # OneNote Online renders ink on top of other contents, not at
@@ -243,16 +243,16 @@ class OneDriveClient:
                 html.body.append(div)
             img = html.new_tag(
                 'img',
-                src = 'data/' + os.path.basename(ink),
-                height = '{}px'.format(converter.pixel_dimensions['Y'])
+                src='data/' + os.path.basename(ink),
+                height='{}px'.format(converter.pixel_dimensions['Y']),
             )
             div.append(img)
 
         with open('{}/{}.html'.format(dest, page_name), 'wb') as f:
-            f.write(html.prettify(formatter = 'html').encode('utf-8'))
+            f.write(html.prettify(formatter='html').encode('utf-8'))
         return result
 
-    def convert_notebook(self, metadata, destdir, quirky = False):
+    def convert_notebook(self, metadata, destdir, quirky=False):
         # quirk mode is less faithful to the official rendering, but more
         # amusing to me
         html = BeautifulSoup('<html><head></head><body></body></html>', 'lxml')
@@ -281,11 +281,11 @@ class OneDriveClient:
                     quirky,
                 )
 
-                link = html.new_tag('a', href = page['id'] + '.html')
+                link = html.new_tag('a', href=page['id'] + '.html')
                 link.string = page['title'] if page['title'] else 'Untitled Page'
                 li = html.new_tag('li')
                 li.append(link)
                 page_list.append(li)
 
         with open('/'.join([destdir, metadata['displayName'], 'index.html']), 'wb') as f:
-            f.write(html.prettify(formatter = 'html').encode('utf-8'))
+            f.write(html.prettify(formatter='html').encode('utf-8'))

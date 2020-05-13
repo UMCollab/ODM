@@ -10,17 +10,17 @@ import odm.cli
 
 
 def main():
-    cli = odm.cli.CLI(['action'], client = 'box')
+    cli = odm.cli.CLI(['action'], client='box')
     client = cli.client
 
     if cli.args.action == 'list-users':
         users = []
         for user in client.users():
             users.append(user.response_object)
-        print(json.dumps(users, indent = 2))
+        print(json.dumps(users, indent=2))
 
     else:
-        print('Unsupported action {}'.format(cli.args.action), file = sys.stderr)
+        print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         sys.exit(1)
 
 
