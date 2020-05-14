@@ -52,6 +52,9 @@ class CLI:
         else:
             logger.setLevel(logging.DEBUG)
 
+        if self.args.verbose < 3:
+            handler.addFilter(lambda x: x.name.startswith('odm'))
+
         logger.addHandler(handler)
 
         self.logger = logging.getLogger(__name__)
