@@ -1,0 +1,69 @@
+#!/bin/bash
+
+rootdir=${rootdir:-~/box-migrations}
+
+for uniqname in $(cat $1) ; do
+    dirname=${rootdir}/${uniqname:0:1}/$uniqname
+    [[ -e $dirname ]] || mkdir -p $dirname
+    if [[ -e $dirname/uploaded ]]; then
+        echo "$uniqname already uploaded"
+        continue
+    fi
+    startts=$(date -Iseconds)
+    (
+        flock -n 9 || exit 1
+        if [[ ! -e $dirname/split ]]; then
+            echo "Fetching metadata for $uniqname"
+            bm user $uniqname list-items --database $dirname/metadata.lmdb -v 2> $dirname/stderr.${startts}.metadata
+            tail -1 $dirname/stderr.${startts}.metadata
+            bm database $dirname/metadata.lmdb status || exit
+
+            bm database $dirname/metadata.lmdb split --item-limit 2000 --size-limit 40 -v 2> $dirname/stderr.${startts}.split
+            touch $dirname/split
+        fi
+    ) 9>>$dirname/lockfile
+    if [[ $? -ne 0 ]]; then
+        echo "$uniqname already locked"
+    fi
+
+    [[ -e $dirname/split ]] || continue
+
+    notdone=0
+    for splitlist in $dirname/metadata.split.*.json; do
+        [[ -e ${splitlist}.uploaded ]] && continue
+        listnum=$(basename $splitlist)
+        listnum=${listnum//[^0-9]/}
+        (
+            flock -n 9 || exit 1
+
+            if [[ ! -e ${splitlist}.downloaded ]]; then
+                echo "Downloading files for $uniqname split $listnum"
+                bm database $dirname/metadata.lmdb download-items --limit $splitlist --filetree $dirname/files/$listnum -v 2> $dirname/stderr.${startts}.download.$listnum
+                if [[ $? -eq 0 ]]; then
+                    echo "Successfully verified $uniqname split $listnum download"
+                    tail -1 $dirname/stderr.${startts}.download.$listnum
+                    touch ${splitlist}.downloaded
+                else
+                    echo "Failed to download $uniqname split $listnum"
+                    exit 1
+                fi
+            fi
+
+            echo "Uploading files for $uniqname split $listnum"
+            gdm filetree $dirname/files/$listnum upload --upload-user $uniqname --upload-path "Migrated from Box" -v 2> $dirname/stderr.${startts}.upload.$listnum
+            if [[ $? -eq 0 ]]; then
+                echo "Successfully uploaded $uniqname split $listnum"
+                tail -1 $dirname/stderr.${startts}.upload.$listnum
+                rm -rf $dirname/files/$listnum
+                touch ${splitlist}.uploaded
+            else
+                exit 1
+            fi
+        ) 9>>$splitlist.lockfile
+        [[ $? -eq 0 ]] || (( notdone++ ))
+    done
+    if [[ $notdone -eq 0 ]]; then
+        echo "Finished transferring $uniqname"
+        touch $dirname/uploaded
+    fi
+done
