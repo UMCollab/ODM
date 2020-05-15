@@ -4,6 +4,7 @@
 # MIT license. See COPYING.
 
 import calendar
+import datetime
 import dateutil
 import json
 import os
@@ -97,10 +98,13 @@ def main():
 
     destdir = cli.args.filetree.rstrip('/') if cli.args.filetree else '/var/tmp'
 
+    ts_start = datetime.datetime.now()
     user_clients = {}
     retval = 0
 
     if cli.args.action in ['download-items', 'list-items', 'verify-items']:
+        count = 0
+        size = 0
         limit = set()
 
         if cli.args.limit:
@@ -127,6 +131,9 @@ def main():
             if cli.args.delta:
                 if item['_odm_color'] != color or not item.get('_odm_modified', True):
                     continue
+
+            count += 1
+            size += item['size']
 
             item_path = ''
             if item['id'] != '0':
@@ -186,6 +193,12 @@ def main():
                 cli.logger.warn('%s has the wrong post-download hash: expected %s, got %s', item_path, item['sha1'], digest)
                 retval = 1
                 continue
+
+        cli.logger.info('{:.2f} MiB across {} items, elapsed time {}'.format(
+            size / (1024 ** 2),
+            count,
+            datetime.datetime.now() - ts_start,
+        ))
 
         sys.exit(retval)
 

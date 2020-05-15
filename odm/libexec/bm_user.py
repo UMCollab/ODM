@@ -3,6 +3,7 @@
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
 
+import datetime
 import os
 import sys
 import uuid
@@ -17,6 +18,8 @@ from odm.db import Database
 def main():
     cli = odm.cli.CLI(['user', 'action', '--database'], client='box')
     client = cli.client
+
+    ts_start = datetime.datetime.now()
 
     if '@' not in cli.args.user:
         cli.args.user += '@' + cli.config['domain']
@@ -66,6 +69,8 @@ def main():
         deleted = set()
         while expanded:
             expanded = False
+            count = 0
+            size = 0
             for key, item in db.iterate():
                 if key.startswith('_odm_'):
                     continue
@@ -74,6 +79,9 @@ def main():
                 parents = []
                 if item['type'] == 'folder':
                     parents.append(item)
+                else:
+                    count += 1
+                    size += item['size']
                 parent = item.get('parent')
                 while parent:
                     parents.append(db.read(parent['id']))
@@ -143,6 +151,9 @@ def main():
                     if child.type == 'folder':
                         expanded = True
                         folders[child.id] = child
+                    else:
+                        count += 1
+                        size += cobj['size']
                     db.write(child.id, cobj)
                 item['_odm_expanded'] = True
                 db.write(key, item)
@@ -151,6 +162,11 @@ def main():
                 expanded = True
 
         db.update('_odm_meta', {'fully_expanded': True})
+        cli.logger.info('{:.2f} MiB across {} items, elapsed time {}'.format(
+            size / (1024 ** 2),
+            count,
+            datetime.datetime.now() - ts_start,
+        ))
     else:
         print('Unsupported action {}'.format(cli.args.action), file=sys.stderr)
         sys.exit(1)
