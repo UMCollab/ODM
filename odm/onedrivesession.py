@@ -12,7 +12,7 @@ import requests_oauthlib
 
 from oauthlib.oauth2 import BackendApplicationClient
 
-from odm.version import VERSION
+from . import __version__
 
 
 class OneDriveSession(requests_oauthlib.OAuth2Session):
@@ -31,7 +31,7 @@ class OneDriveSession(requests_oauthlib.OAuth2Session):
         self.token_updater = lambda x: None
         self._fresh_token()
         self.headers.update({
-            'User-Agent': 'odm/{} ({})'.format(VERSION, ms_config['client_id']),
+            'User-Agent': 'odm/{} ({})'.format(__version__, ms_config['client_id']),
         })
 
     def _fresh_token(self):

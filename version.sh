@@ -13,7 +13,7 @@ fi
 cat > odm/version.py <<EOF
 #!/usr/bin/env python3
 
-VERSION = '$version'
+__version__ = '$version'
 EOF
 
 printf %s $version

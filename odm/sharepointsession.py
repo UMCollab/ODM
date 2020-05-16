@@ -10,7 +10,7 @@ import time
 import adal
 import requests
 
-from odm.version import VERSION
+from . import __version__
 
 
 class SharepointSession(requests.Session):
@@ -22,7 +22,7 @@ class SharepointSession(requests.Session):
         self.timeout = timeout
         self._fresh_token()
         self.headers.update({
-            'User-Agent': 'NONISV|UniversityOfMichigan|odm/{} ({})'.format(VERSION, ms_config['client_id']),
+            'User-Agent': 'NONISV|UniversityOfMichigan|odm/{} ({})'.format(__version__, ms_config['client_id']),
         })
 
     def _fresh_token(self):

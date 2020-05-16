@@ -15,7 +15,7 @@ from hashlib import md5
 import google.oauth2.service_account
 import google.auth.transport.requests
 
-from odm.version import VERSION
+from . import __version__
 
 
 class GoogleDriveClient:
@@ -41,7 +41,7 @@ class GoogleDriveClient:
             )
         self.session = google.auth.transport.requests.AuthorizedSession(self.creds)
         self.session.headers.update({
-            'User-Agent': 'odm/{}'.format(VERSION),
+            'User-Agent': 'odm/{}'.format(__version__),
         })
 
     def _request(self, verb, path, **kwargs):

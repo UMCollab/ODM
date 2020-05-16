@@ -3,11 +3,11 @@
 # This file is part of ODM and distributed under the terms of the
 # MIT license. See COPYING.
 
-from odm.version import VERSION
+from .. import __version__
 
 
 def main():
-    print('ODM version {}'.format(VERSION))
+    print('ODM version {}'.format(__version__))
 
 
 if __name__ == '__main__':
