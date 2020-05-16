@@ -146,6 +146,15 @@ odm user ezekielh list-notebooks > ezekielh-onenote.json
 odm list ezekielh-onenote.json convert-notebooks --filetree '/var/tmp/ezekielh/Exported from OneNote'
 ```
 
+## Downloading from Box
+
+```
+bm user ezekielh list-items --database ezekielh.lmdb
+bm database ezekielh.lmdb download-items --filetree /var/tmp/ezekielh
+bm user ezekielh list-items --database ezekielh.lmdb
+bm database ezekielh.lmdb download-items --filetree /var/tmp/ezekielh --delta
+```
+
 ## Uploading to Google Drive
 
 ```
