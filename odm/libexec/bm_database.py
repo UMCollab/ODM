@@ -78,8 +78,8 @@ def main():
             if cli.args.delta and not item['_odm_modified']:
                 continue
 
+            count += 1
             if size + item['size'] > size_limit or len(chunk_keys) >= item_limit:
-                count += len(chunk_keys)
                 split += 1
                 _write_chunk(cli.logger, fname_tmpl.format(split), chunk_keys, size)
                 chunk_keys = []
