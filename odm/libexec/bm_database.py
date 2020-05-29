@@ -13,8 +13,11 @@ import time
 
 from hashlib import sha1
 
+import pypandoc
+
 import odm.cli
 
+from odm.boxnote import BoxNote
 from odm.db import Database
 from odm.util import chunky_path
 
@@ -193,6 +196,21 @@ def main():
                 cli.logger.warn('%s has the wrong post-download hash: expected %s, got %s', item_path, item['sha1'], digest)
                 retval = 1
                 continue
+
+            if item['name'].endswith('.boxnote'):
+                note = BoxNote(item_path, client)
+                text = note.convert()
+                note_path = '{}.html'.format(item_path)
+                pypandoc.convert_text(
+                    text,
+                    'html',
+                    format='json',
+                    outputfile=note_path,
+                    extra_args=[
+                        '-s',
+                        '-H', os.path.join(os.path.dirname(__file__), '../boxnote.css'),
+                    ],
+                )
 
         cli.logger.info('{:.2f} MiB across {} items, elapsed time {}'.format(
             size / (1024 ** 2),
