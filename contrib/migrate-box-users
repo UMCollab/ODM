@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rootdir=${rootdir:-~/box-migrations}
+rootdir=${rootdir:-/usr/local/magic}
 
 for uniqname in $(cat $1) ; do
     dirname=${rootdir}/${uniqname:0:1}/$uniqname
