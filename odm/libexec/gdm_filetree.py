@@ -60,17 +60,24 @@ def main():
                 size += stat.st_size
                 relpath = os.path.relpath(fpath, cli.args.path)
                 cli.logger.info('Working on file %s', relpath)
+
+                # FIXME: come up with a better way of handling this
+                conv = None
+                if fname.endswith('.boxnote.html'):
+                    fname = fname.replace('.boxnote.html', '.boxnote-exported')
+                    conv = 'application/vnd.google-apps.document'
+
                 if cli.args.action == 'upload':
                     attempt = 0
                     result = False
                     while attempt < 3 and not result:
                         attempt += 1
-                        result = client.upload_file(fpath, fname, dir_map[parent])
+                        result = client.upload_file(fpath, fname, dir_map[parent], conv)
                     if not result:
                         cli.logger.warning('Failed to upload %s', relpath)
                         retval = 1
                 elif dir_map[parent]:
-                    existing = client.verify_file(fpath, fname, dir_map[parent])
+                    existing = client.verify_file(fpath, fname, dir_map[parent], conv)
                     if existing:
                         if existing['verified']:
                             cli.logger.info('Verified %s', relpath)

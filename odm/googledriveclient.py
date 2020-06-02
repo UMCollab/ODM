@@ -117,24 +117,30 @@ class GoogleDriveClient:
             json=payload,
         ).json()['id']
 
-    def verify_file(self, file_name, name, parent):
+    def verify_file(self, file_name, name, parent, convert):
         existing = self.find_item(name, parent).json()
         if len(existing['files']) == 0:
             return None
 
-        h = md5()
-        with open(file_name, 'rb') as f:
-            while True:
-                block = f.read(64 * 1024)
-                if block:
-                    h.update(block)
-                else:
-                    break
         ret = existing['files'][0]
-        ret['verified'] = ret['md5Checksum'] == h.hexdigest()
+
+        if convert:
+            # FIXME: can we do some form of actual verification?
+            ret['verified'] = True
+        else:
+            h = md5()
+            with open(file_name, 'rb') as f:
+                while True:
+                    block = f.read(64 * 1024)
+                    if block:
+                        h.update(block)
+                    else:
+                        break
+            ret['verified'] = ret['md5Checksum'] == h.hexdigest()
+
         return ret
 
-    def upload_file(self, file_name, name, parent):
+    def upload_file(self, file_name, name, parent, convert):
         stat = os.stat(file_name)
         seek = 0
         attempt = 0
@@ -147,7 +153,11 @@ class GoogleDriveClient:
             self.create_file(name, parent, mtime=mtime)
             return True
 
-        existing = self.verify_file(file_name, name, parent)
+        metadata = {
+            'modifiedTime': mtime,
+        }
+
+        existing = self.verify_file(file_name, name, parent, convert)
         if existing:
             if existing['verified']:
                 self.logger.info('Verified {}'.format(file_name))
@@ -162,11 +172,19 @@ class GoogleDriveClient:
                     'uploadType': 'resumable',
                 },
                 headers={'X-Upload-Content-Length': str(stat.st_size)},
-                json={
-                    'modifiedTime': mtime,
-                },
+                json=metadata,
             )
         else:
+            metadata.update({
+                'name': name,
+                'parents': [
+                    parent,
+                ],
+            })
+
+            if convert:
+                metadata['mimeType'] = convert
+
             upload = self.request(
                 'POST',
                 'upload/drive/v3/files',
@@ -174,13 +192,7 @@ class GoogleDriveClient:
                 headers={
                     'X-Upload-Content-Length': str(stat.st_size)
                 },
-                json={
-                    'name': name,
-                    'parents': [
-                        parent,
-                    ],
-                    'modifiedTime': mtime,
-                },
+                json=metadata,
             )
         path = upload.headers['location']
 
